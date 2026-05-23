@@ -1,0 +1,27 @@
+# virtual env
+.venv/
+
+# datasets
+data/
+
+# python
+__pycache__/
+*.pyc
+
+# notebooks
+.ipynb_checkpoints/
+
+# logs
+logs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# vscode
+.vscode/
+
+# model artifacts
+*.pt
+*.pth
+*.ckpt
