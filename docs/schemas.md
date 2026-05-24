@@ -1,7 +1,18 @@
 # SeeClick-Web
 
 ## Source
+
 https://github.com/njucckevin/SeeClick
+
+## Dataset Type
+
+GUI grounding / webpage interaction dataset.
+
+Used for:
+- UI grounding
+- instruction following
+- SoM prompting
+- multimodal agent training
 
 ## Coordinate format
 
@@ -49,7 +60,9 @@ Pixel bbox becomes:
 - Multiple elements per webpage screenshot
 - Bounding boxes are already normalized
 - Need denormalization before rendering SoM overlays
-- UI screenshots are static images (SoM only, no ToM)
+- UI screenshots are static images
+- SoM is applied to UI screenshots
+- ToM is NOT applied to UI screenshots
 
 ## Internal utilities
 
@@ -59,9 +72,45 @@ Implemented:
 - denormalize_bbox
 - bbox_center
 - bbox_area
-
-Planned:
 - bbox_iou
+
+### denormalize_bbox
+
+Purpose:
+Convert normalized coordinates into pixel coordinates for rendering.
+
+Output:
+[x1, y1, x2, y2] in pixel space.
+
+### bbox_center
+
+Purpose:
+Compute bbox center point.
+
+Used for:
+- click-point generation
+- SoM label placement
+- nearest-element matching
+
+### bbox_area
+
+Purpose:
+Compute bbox area safely.
+
+Handles malformed boxes using:
+max(0, dimension)
+
+### bbox_iou
+
+Intersection over Union:
+
+IoU = intersection_area / union_area
+
+Used for:
+- duplicate filtering
+- overlap analysis
+- evaluation metrics
+- annotation matching
 
 ## Planned preprocessing pipeline
 
@@ -76,3 +125,26 @@ denormalize bbox
 apply SoM rendering
     ↓
 generate training sample
+
+## Planned SoM rendering pipeline
+
+image
+    +
+elements
+    ↓
+draw bbox
+    ↓
+draw numeric marks
+    ↓
+save rendered image
+
+## Current Project Status
+
+Completed:
+- environment setup
+- dataset schema inspection
+- bbox utilities
+- unit tests
+
+Current focus:
+- first visual SoM rendering
