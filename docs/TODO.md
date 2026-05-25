@@ -1,4 +1,4 @@
-# TODO
+# TODO.md
 
 ## Dataset
 - [x] Create dataset directory structure
@@ -6,10 +6,18 @@
 - [x] Download 10k subset
 - [x] Download annotation metadata
 - [x] Inspect repository schema
-- [ ] Load annotation JSON locally
-- [ ] Validate bbox visually against screenshots
-- [ ] Inspect image naming consistency
-- [ ] Check for missing/corrupt images
+- [x] Load annotation JSON locally
+- [x] Inspect real annotation samples
+- [x] Verify nested element structure
+- [x] Verify normalized bbox format
+- [x] Inspect image naming consistency
+- [x] Detect annotation/image subset mismatch
+- [x] Build image existence filtering pipeline
+- [x] Validate multiple samples visually
+- [x] Confirm element data_type distribution (text ~95%, hover ~5%)
+- [x] Confirm absence of HTML tag metadata in schema
+- [ ] Check for corrupt images
+- [ ] Validate rendering behavior on extreme-resolution screenshots
 
 ## Utilities
 - [x] Implement denormalize_bbox
@@ -20,6 +28,7 @@
 - [x] Configure pytest infrastructure
 
 ## Cleaning
+- [x] Filter annotations to locally available images
 - [ ] Validate bbox ranges
 - [ ] Detect malformed boxes
 - [ ] Remove invalid elements
@@ -28,19 +37,42 @@
 - [ ] Save cleaned schema
 
 ## SoM
+
+### Debug Renderer
 - [x] Create render_ui.py skeleton
-- [ ] Draw bbox overlays
-- [ ] Add numeric mark labels
-- [ ] Improve label placement
-- [ ] Prevent overlap between labels
-- [ ] Save rendered visualization samples
+- [x] Draw bbox overlays
+- [x] Add numeric mark labels
+- [x] Generate first rendered visualization
+- [x] Verify geometric alignment manually
+
+### Paper-style SoM Renderer
+- [x] Create render_som.py
+- [x] Render compact numbered markers
+- [x] Place markers at bbox centers
+- [x] Add circular marker backgrounds
+- [x] Improve label readability
+- [x] Prevent overlap between nearby marks
+- [x] Filter degenerate / zero-area UI elements
+- [x] Limit maximum marks per image
+- [x] Save paper-style SoM renders
+- [x] Validate renderer on 10-sample batch
+- [x] Tune MIN_AREA_FLOOR / MIN_SPACING / MAX_MARKS to paper-quality
+- [x] Record decisions log (rejected fixed MIN_AREA, ≥2.0 spacing,
+      tag-filter, saliency scoring, dynamic MIN_AREA)
+- [ ] Validate renderer on 100-sample batch
+- [ ] Validate renderer on 1000-sample batch
+- [ ] Decide adaptive scaling policy for very high/low resolutions
+- [ ] Benchmark large-batch rendering throughput
 
 ## Formatting
-- [ ] text->bbox
-- [ ] text->point
-- [ ] bbox->text
-- [ ] point->text
+- [ ] text -> bbox
+- [ ] text -> point
+- [ ] bbox -> text
+- [ ] point -> text
+- [ ] Map instructions to mark IDs
 - [ ] Merge multiple tasks per screenshot
+- [ ] Apply Vision2UI subtask sampling weights
+      ([0.4, 0.4, 0.1, 0.1] for the four grounding tasks)
 - [ ] Generate Magma-style conversation samples
 
 ## Infrastructure
@@ -50,10 +82,14 @@
 - [x] Configure .gitignore
 - [x] Setup pytest.ini
 - [x] Setup docs structure
+- [x] Create raw/interim/processed structure
 
 ## Future
 - [ ] Add OCR enrichment pipeline
-- [ ] Add mobile datasets
+- [ ] Add mobile datasets (RICO, AITW)
 - [ ] Add visualization notebooks
 - [ ] Benchmark preprocessing speed
 - [ ] Implement training dataloader
+- [ ] Add train/validation splits
+- [ ] Saliency scoring for ScreenSpot / OmniParser eval pipeline
+      (deferred; not applicable to pre-curated SeeClick data)
