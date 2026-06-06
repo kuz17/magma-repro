@@ -1,3 +1,5 @@
+#bbox.py
+
 def denormalize_bbox(bbox, width, height):
     """
     Convert [0,1] normalized bbox to pixel coordinates.

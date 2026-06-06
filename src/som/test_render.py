@@ -1,9 +1,11 @@
+#test_render.py
+
 import json
 from pathlib import Path
 
 from PIL import Image
 
-from src.som.render_ui import apply_som
+from src.som.render_ui import apply_ui
 
 
 FILTERED_PATH = (
@@ -42,7 +44,7 @@ print(image_path)
 
 image = Image.open(image_path)
 
-rendered = apply_som(
+rendered = apply_ui(
     image,
     sample["elements"],
 )

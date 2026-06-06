@@ -1,29 +1,40 @@
+#render_som.py
 from PIL import ImageDraw, ImageFont
 from src.utils.bbox import (
     bbox_center,
     bbox_area,
 )
 
-MIN_AREA_FLOOR = 1e-6   # reject only degenerate/zero-area bboxes
-MAX_MARKS = 20
-MIN_SPACING = 1.3       # multiplier on marker diameter
+MIN_AREA_FLOOR = 1e-6   # reject only degenerate bboxes
+MAX_MARKS = 20          # can be increased if needed but for testing keeping it small
+MIN_SPACING = 1.3       
+
+FONT = ImageFont.truetype(
+    "DejaVuSans-Bold.ttf",
+    12,
+)
 
 
 def apply_som(image, elements, radius=9):
     draw = ImageDraw.Draw(image)
     width, height = image.size
 
-    try:
-        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 12)
-    except:
-        font = ImageFont.load_default()
+    
+    font = FONT #ImageFont.truetype("DejaVuSans-Bold.ttf", 12) #or some default font
+    
 
-    # 1. drop only degenerate bboxes; MAX_MARKS + non-overlap handle clutter
-    candidates = [
-        e for e in elements
-        if bbox_area(e["bbox"]) > MIN_AREA_FLOOR
-        # and e.get("tag", "").lower() in {"a", "button", "input", ...}
-    ]
+    # 1. drop only degenerate bboxes
+    candidates = []
+
+    for e in elements:
+
+        area = bbox_area(e["bbox"])
+
+        if area > MIN_AREA_FLOOR:
+            candidates.append(e)
+
+        
+    
 
     # 2. prioritize larger elements so they win ties
     candidates.sort(key=lambda e: -bbox_area(e["bbox"]))

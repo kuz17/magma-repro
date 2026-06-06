@@ -1,9 +1,11 @@
+#render_ui.py
+
 from PIL import ImageDraw
 
 from src.utils.bbox import denormalize_bbox
 
 
-def apply_som(image, elements):
+def apply_ui(image, elements):
 
     draw = ImageDraw.Draw(image)
 

@@ -1,3 +1,4 @@
+#test_render_som.py
 import json
 from pathlib import Path
 

@@ -16,8 +16,6 @@
 - [x] Validate multiple samples visually
 - [x] Confirm element data_type distribution (text ~95%, hover ~5%)
 - [x] Confirm absence of HTML tag metadata in schema
-- [ ] Check for corrupt images
-- [ ] Validate rendering behavior on extreme-resolution screenshots
 
 ## Utilities
 - [x] Implement denormalize_bbox
@@ -29,12 +27,12 @@
 
 ## Cleaning
 - [x] Filter annotations to locally available images
-- [ ] Validate bbox ranges
-- [ ] Detect malformed boxes
-- [ ] Remove invalid elements
-- [ ] Remove duplicate elements
-- [ ] Compute dataset statistics
-- [ ] Save cleaned schema
+- [x] Validate bbox ranges
+- [x] Detect malformed boxes
+- [x] Remove invalid elements
+- [x] Remove duplicate elements
+- [x] Compute dataset statistics
+- [x] Save cleaned schema
 
 ## SoM
 
