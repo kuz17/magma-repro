@@ -145,9 +145,11 @@ load screenshot
     ↓
 denormalize bbox
     ↓
-render debug overlays
+render SoM overlay
     ↓
-visual verification
+format Magma-style conversations
+    ↓
+write to conversations.jsonl  ← COMPLETE
 
 ## Renderer architecture
 
@@ -172,7 +174,7 @@ Target style:
 - minimal visual obstruction
 - marker placement at bbox centers
 
-Parameters (current):
+Parameters (settled):
 - radius = 9 px
 - font = DejaVuSans-Bold, 12pt (fallback: PIL default)
 - marker = red fill, white 1px outline, white numeric label
@@ -181,7 +183,7 @@ Parameters (current):
 - MIN_SPACING = 1.3 (multiplier on marker diameter)
 
 Status:
-Implemented and visually validated on 10-sample batch.
+Implemented, validated on 10-sample batch, and scaled to full 10k.
 
 ## Paper-style SoM pipeline
 image + elements
@@ -195,6 +197,42 @@ greedy non-overlap placement, capped at MAX_MARKS
 draw numbered markers at bbox centers
     ↓
 save SoM image
+
+## Formatting pipeline
+
+### Modules
+- task_samplers.py — samples one grounding task per screenshot
+- input_field.py  — handles input→point and input→bbox subtasks
+- conversation.py — assembles turn-by-turn conversation structure
+- formatter.py    — top-level: reads cleaned annotations, calls
+                    renderer + sampler, writes output JSONL
+
+### Grounding tasks and sampling weights
+| Task         | Weight |
+|--------------|--------|
+| text→bbox    | 0.4    |
+| text→point   | 0.4    |
+| bbox→text    | 0.1    |
+| point→text   | 0.1    |
+
+Input field subtasks (input→point, input→bbox) sampled with equal
+probability (0.5/0.5) and merged into the same conversation.
+
+### Output schema (conversations.jsonl)
+One JSON object per line, one object per screenshot:
+
+{
+  "image": "<img_filename>",
+  "conversations": [
+    {"from": "user",      "value": "<image>\n<task prompt>"},
+    {"from": "assistant", "value": "<answer>"},
+    ...                   // optional merged input-field turns
+  ]
+}
+
+Output location: data/processed/seeclick_web/conversations.jsonl
+
+Format validated against paper Figure 12.
 
 ## Decisions log
 - Tried fixed `MIN_AREA = 0.0005`: too aggressive on sparse pages
@@ -216,6 +254,9 @@ save SoM image
 - Considered dynamic / percentile-based `MIN_AREA`. Rejected in favor
   of static floor + MAX_MARKS, which is simpler and behaves correctly
   on both sparse and dense pages.
+- SoM rendering is decoupled from formatter.py by design. Rendering
+  happens as a separate preprocessing step; formatter reads pre-rendered
+  images. This keeps the two concerns independent.
 
 ## Current Project Status
 
@@ -230,15 +271,12 @@ Completed:
 - first visual alignment validation
 - paper-style SoM renderer
 - 10-sample SoM batch visual validation
-
-Validated:
-- normalized → pixel conversion
-- annotation parsing
-- image matching
-- geometric correctness
-- SoM marker placement and density
+- full 10k SoM rendering
+- Magma-style conversation formatting (all four grounding tasks +
+  input field subtasks)
+- conversations.jsonl written and validated against Figure 12
 
 Current focus:
-- scale SoM rendering to larger batches for sanity checking
-- decide on radius/font scaling policy for screenshots that deviate
-  significantly from typical resolution
+- Statistical validation pass on conversations.jsonl
+- Clarify reproduction target with mentor (methodology vs results)
+- Run official Magma-8B demo to establish benchmark baseline

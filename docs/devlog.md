@@ -124,48 +124,110 @@ Decisions recorded:
 
 ---
 
+### 2026-06-07
+
+## Goal
+Complete SeeClick-Web data pipeline end-to-end and pivot to model phase.
+
+---
+
+## Completed
+
+### SoM Rendering — Full Scale
+- Scaled paper-style SoM renderer to full 10k local image subset
+- All 10k images rendered successfully
+- SoM parameters unchanged from validated 10-sample config:
+  radius=9, MIN_AREA_FLOOR=1e-6, MAX_MARKS=20, MIN_SPACING=1.3
+
+### Formatting Pipeline
+Implemented full Magma-style conversation formatter:
+
+Modules:
+- task_samplers.py  — samples one grounding task per screenshot
+- input_field.py    — input→point and input→bbox subtasks
+- conversation.py   — assembles turn-by-turn conversation structure
+- formatter.py      — top-level pipeline: annotations → JSONL
+
+Four grounding tasks implemented with paper-specified sampling weights:
+- text→bbox   (0.4)
+- text→point  (0.4)
+- bbox→text   (0.1)
+- point→text  (0.1)
+
+Input field subtasks merged into the same conversation at equal weight.
+Multiple subtasks from the same webpage merged into one example
+(matches paper Section B.1.1).
+
+Output:
+- data/processed/seeclick_web/conversations.jsonl
+- Format validated against paper Figure 12
+- All 10k screenshots processed
+
+### Project Pivot
+SeeClick-Web data pipeline is complete. Project transitions from
+data engineering to model work.
+
+Key open question surfaced: reproduce the methodology (train own model
+on generated data) vs reproduce the released results (validate against
+Magma-8B weights). Decision needs mentor input before proceeding.
+
+---
+
 ## Current Status
 
-Current pipeline stage:
+Pipeline stage: COMPLETE for SeeClick-Web
 
 raw annotations
     ↓
-local image filtering
+local image filtering        ✓
     ↓
-bbox utilities
+bbox utilities               ✓
     ↓
-debug rendering
+debug rendering              ✓
     ↓
-paper-style SoM rendering  ← validated on 10-sample batch
+paper-style SoM rendering    ✓  (10k images)
     ↓
-formatted training samples (next)
+Magma-style formatting       ✓  (conversations.jsonl)
+    ↓
+model / evaluation           ← next
 
 ---
 
 ## Next
 
 ### Immediate
-- Scale SoM rendering to larger batches (100, then 1000) for sanity
-  checking and spot-check sampling
-- Decide on radius / font scaling policy for screenshots that deviate
-  significantly from typical resolution
+- Statistical validation pass on conversations.jsonl:
+  record count, task distribution (~40/40/10/10), bbox range checks,
+  empty conversation check
+- Clarify reproduction target with mentor:
+  methodology reproduction vs result reproduction
+- Clone official Magma repo and run SeeClick UI grounding demo
+  to establish a concrete benchmark baseline number
 
-### After validation
-- Generate instruction ↔ mark index mappings
-- Create Magma-style formatted training samples (text2point /
-  text2bbox / point2text / bbox2text per the Vision2UI subtasks)
-- Run preprocessing over full local 10k subset
-- Save finalized artifacts into data/processed/
+### After mentor alignment
+Option A — Full methodology reproduction:
+- Move to ShareGPT4V + LLaVA-Instruct formatting (next pipeline phase)
+- Then SeeClick-Mobile
+- Then ToM generation (CoTracker-based)
+- Then training run on full data mix
+
+Option B — Small demo first:
+- Fine-tune Phi-3.5-Vision or LLaVA-1.5-7B on conversations.jsonl
+- Evaluate on SeeClick grounding subset
+- Compare against Magma-8B reference numbers
+- Use as proof-of-concept before requesting heavy compute
 
 ### Later
-- Move into the code-study phase of the Magma reproduction roadmap
+- Cloud infrastructure scale-up
+- Docker containerization
+- ToM generation pipeline (CoTracker)
+- SeeClick-Mobile + Vision2UI formatting
 
 ---
 
 ## Notes
-- UI screenshots use SoM only
-- ToM is not applicable for discrete UI screenshots
-- Current focus is preprocessing and dataset engineering
-- Model training has NOT started yet
-- Rendering pipeline is now validated; next bottleneck is converting
-  rendered samples into training-format instruction data
+- UI screenshots use SoM only; ToM is not applicable
+- Reproduction target (methodology vs results) is the key
+  open question going into the model phase
+- GPU resource request may be needed depending on mentor decision
+- conversations.jsonl is the primary artifact from Phase 1
