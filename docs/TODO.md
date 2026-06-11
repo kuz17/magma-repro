@@ -55,13 +55,10 @@
 - [x] Save paper-style SoM renders
 - [x] Validate renderer on 10-sample batch
 - [x] Tune MIN_AREA_FLOOR / MIN_SPACING / MAX_MARKS to paper-quality
-- [x] Record decisions log (rejected fixed MIN_AREA, ≥2.0 spacing,
-      tag-filter, saliency scoring, dynamic MIN_AREA)
+- [x] Record decisions log
 - [x] Scale SoM rendering to full 10k subset
-- [ ] Spot-check statistical distribution of marks per image across
-      full 10k (mean, min, max, % hitting MAX_MARKS cap)
-- [ ] Decide adaptive scaling policy for very high/low resolutions
-      (deferred; not blocking training)
+- [ ] Spot-check statistical distribution of marks per image across full 10k
+- [ ] Decide adaptive scaling policy for very high/low resolutions (deferred)
 
 ## Formatting
 - [x] Implement task_samplers.py
@@ -74,38 +71,78 @@
 - [x] point → text task
 - [x] Map instructions to mark IDs
 - [x] Merge multiple tasks per screenshot into one conversation
-- [x] Apply Vision2UI subtask sampling weights (0.4/0.4/0.1/0.1)
-- [x] Implement input field subtasks (input→point, input→bbox, equal weight)
-- [x] Generate Magma-style conversation samples
-- [x] Write output to data/processed/seeclick_web/conversations.jsonl
-- [x] Validate output format matches paper Figure 12
+- [x] Apply Vision2UI subtask sampling weights (0.4 / 0.4 / 0.1 / 0.1)
+- [x] Implement input-field subtasks
+- [x] Generate Magma-style conversations
+- [x] Write conversations.jsonl
+- [x] Validate output format against paper Figure 12
 - [ ] Statistical validation pass on conversations.jsonl
-      (record count, task distribution, bbox range checks, empty convs)
+      - record count
+      - task distribution
+      - bbox range checks
+      - empty conversation detection
 
 ## Model
 
-### Reproduction Target
-- [ ] Clarify with mentor: reproduce methodology vs reproduce released results
-- [ ] Document decision in devlog
+### Experiment Design
+- [x] Pivot from full Magma-8B reproduction to small-VLM experiment
+- [x] Define baseline vs fine-tuned comparison
+- [x] Define click accuracy metric (point ∈ GT bbox)
+- [x] Train/validation split (90/10, seed=42)
 
-### Magma-8B Reference Run
-- [ ] Clone official Magma repo (github.com/microsoft/Magma)
+### Agent
+- [x] Implement src/agent/ui_agent.py
+- [x] Implement backend abstraction
+- [x] Implement QwenBackend
+- [x] Implement MagmaBackend
+- [x] Implement AnnotationSoM
+- [ ] Finish OmniParser installation
+- [x] Implement OmniParserSoM integration
+- [x] Implement three prompting modes
+- [x] Implement coordinate parser
+- [x] Handle backend-specific coordinate scaling
+- [x] Download Qwen2.5-VL-3B-Instruct
+- [ ] Download OmniParser-v2.0 weights
+
+### Evaluation
+- [x] Implement src/eval/eval.py
+- [x] Click accuracy metric
+- [x] IoU@0.5 metric
+- [x] Mean IoU metric
+- [x] Per-task breakdown
+- [x] Degenerate GT bbox fix
+- [x] Prediction normalization
+- [x] Smoke test (10 samples)
+- [ ] Run 200-sample baseline evaluation
+- [ ] Save results/eval_baseline.json
+- [ ] Analyze failure cases
+- [ ] Generate qualitative examples
+
+### Fine-tuning
+- [ ] Implement src/train/finetune.py
+- [ ] Convert conversations.jsonl → Qwen SFT format
+- [ ] Configure QLoRA
+- [ ] Configure TRL SFTTrainer
+- [ ] Run Colab T4 training
+- [ ] Export LoRA adapter
+- [ ] Save adapter to models/lora_adapter/
+- [ ] Evaluate fine-tuned model
+- [ ] Save results/eval_finetuned.json
+- [ ] Compute baseline → finetuned delta
+- [ ] Generate comparison table
+
+### Magma Reference
+- [ ] Clone official Magma repository
 - [ ] Download Magma-8B weights
-- [ ] Run official SeeClick / UI grounding demo
-- [ ] Record baseline grounding accuracy (this is the benchmark target)
+- [ ] Run official UI-grounding demo
+- [ ] Record reference performance
+- [ ] Compare with Qwen baseline
 
-### Small VLM Demo (if full Magma-8B training deferred)
-- [ ] Select base VLM (Phi-3.5-Vision or LLaVA-1.5-7B)
-- [ ] Estimate GPU requirements for fine-tuning on 10k conversations
-- [ ] Fine-tune for 1–2 epochs on conversations.jsonl
-- [ ] Evaluate on SeeClick grounding subset
-- [ ] Compare against Magma-8B reference numbers
-
-### Training Infrastructure
-- [ ] Estimate compute requirements for Magma-8B fine-tuning
-- [ ] Request GPU resources if needed (cloud scale-up phase)
-- [ ] Implement training dataloader for conversations.jsonl
-- [ ] Add train/validation splits
+### Reproduction Target
+- [ ] Clarify with mentor:
+      - reproduce methodology?
+      - reproduce released results?
+- [ ] Document decision in devlog
 
 ## Infrastructure
 - [x] Setup virtual environment
@@ -113,16 +150,36 @@
 - [x] Setup GitHub sync
 - [x] Configure .gitignore
 - [x] Setup pytest.ini
-- [x] Setup docs structure
-- [x] Create raw/interim/processed structure
+- [x] Create docs structure
+- [x] Create raw/interim/processed layout
 
-## Future
-- [ ] ShareGPT4V + LLaVA-Instruct data formatting (next pipeline phase)
-- [ ] SeeClick-Mobile formatting (same pipeline, different schema nuances)
-- [ ] ToM generation via CoTracker (heaviest lift; after static data solid)
-- [ ] Add OCR enrichment pipeline
-- [ ] Add visualization notebooks
-- [ ] Benchmark preprocessing speed
-- [ ] Saliency scoring for ScreenSpot / OmniParser eval pipeline
-      (deferred; not applicable to pre-curated SeeClick data)
-- [ ] Docker containerization (deferred to cloud/training phase)
+## Thesis Deliverables
+- [ ] Produce architecture diagram
+- [ ] Produce data pipeline diagram
+- [ ] Produce evaluation methodology figure
+- [ ] Write experiment section draft
+- [ ] Write implementation section draft
+- [ ] Write limitations section
+- [ ] Maintain development log
+
+## Future Work
+- [ ] ShareGPT4V formatting pipeline
+- [ ] LLaVA-Instruct formatting pipeline
+- [ ] SeeClick-Mobile support
+- [ ] OCR enrichment
+- [ ] ToM generation via CoTracker
+- [ ] Visualization notebooks
+- [ ] Preprocessing benchmarks
+- [ ] Saliency scoring experiments
+- [ ] Docker containerization
+
+## Immediate Next Steps
+1. Finish OmniParser installation.
+2. Complete 200-sample baseline evaluation.
+3. Inspect baseline failures manually.
+4. Implement finetune.py.
+5. Run QLoRA training on Colab.
+6. Evaluate LoRA adapter.
+7. Compare baseline vs finetuned performance.
+8. Obtain Magma reference numbers.
+9. Write thesis experiment section.

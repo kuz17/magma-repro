@@ -1,0 +1,201 @@
+{
+  "run": "baseline",
+  "n_evaluated": 8,
+  "n_skipped": 2,
+  "click_accuracy": 0.0,
+  "iou_hit_50": 0.0,
+  "mean_iou": 0.0,
+  "mean_time_s": 16.6,
+  "by_task": {
+    "text_to_point": {
+      "n": 3,
+      "click_acc": 0.0,
+      "iou_hit_50": 0.0,
+      "mean_iou": 0.0
+    },
+    "text_to_bbox": {
+      "n": 5,
+      "click_acc": 0.0,
+      "iou_hit_50": 0.0,
+      "mean_iou": 0.0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": 0,
+      "task_type": "text_to_point",
+      "instruction": "FACILITIES HIRE",
+      "gt_bbox": [
+        0.61875,
+        0.13796296296296295,
+        0.6958333333333333,
+        0.19722222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.019791666666666666,
+        0.5115740740740741
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.4898148148148148,
+        0.03854166666666667,
+        0.5333333333333333
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [529, 74, 576, 83], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 22.355671167373657
+    },
+    {
+      "sample_id": 1,
+      "task_type": "text_to_bbox",
+      "instruction": "REQUEST FOR QUOTATION",
+      "gt_bbox": [
+        0.5,
+        0.53,
+        0.63,
+        0.57
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to \"REQUEST FOR QUOTATION\" is located at the coordinates (430, 257) with a width of 18",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.892219543457031
+    },
+    {
+      "sample_id": 2,
+      "task_type": "text_to_point",
+      "instruction": "Accept all cookies",
+      "gt_bbox": [
+        0.35,
+        0.6018518518518519,
+        0.6416666666666667,
+        0.6388888888888888
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to \"Accept all cookies\" is located at the bottom right of the cookie settings dialog box. The coordinates for this button are approximately:\n\n- Top-left",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.157719850540161
+    },
+    {
+      "sample_id": 4,
+      "task_type": "text_to_bbox",
+      "instruction": "Voyage ADNAL en France - 2024",
+      "gt_bbox": [
+        0.36,
+        0.68,
+        0.5,
+        0.71
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to click is located at the top right of the page, near the navigation bar. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.29090404510498
+    },
+    {
+      "sample_id": 5,
+      "task_type": "text_to_bbox",
+      "instruction": "Accueil",
+      "gt_bbox": [
+        0.0,
+        0.0,
+        0.99,
+        0.11
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Accueil\" is located at the top left corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.93273663520813
+    },
+    {
+      "sample_id": 6,
+      "task_type": "text_to_bbox",
+      "instruction": "zur Startseite",
+      "gt_bbox": [
+        0.44,
+        0.65,
+        0.55,
+        0.69
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (X:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.11120080947876
+    },
+    {
+      "sample_id": 7,
+      "task_type": "text_to_point",
+      "instruction": "Driving with Chauffeur Geelong Handpicked Chauffeur Services",
+      "gt_bbox": [
+        0.025,
+        0.47685185185185186,
+        0.2421875,
+        0.4925925925925926
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.059375,
+        0.10046296296296296
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.012037037037037037,
+        0.11770833333333333,
+        0.18888888888888888
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [13, 226, 204, 235], \"label",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.505379438400269
+    },
+    {
+      "sample_id": 8,
+      "task_type": "text_to_bbox",
+      "instruction": "Accueil",
+      "gt_bbox": [
+        0.41,
+        0.0,
+        0.52,
+        0.11
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.553351402282715
+    }
+  ]
+}
