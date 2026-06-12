@@ -1,0 +1,280 @@
+{
+  "run": "baseline_test",
+  "mode": "baseline",
+  "n_evaluated": 8,
+  "n_skipped": 2,
+  "click_accuracy": 0.125,
+  "iou_hit_50": 0.0,
+  "mean_iou": 0.0465,
+  "mean_dist_to_gt": 0.3361,
+  "no_pred": 0,
+  "mean_time_s": 15.84,
+  "by_task": {
+    "text_to_point": {
+      "n": 3,
+      "click_acc": 0.0,
+      "iou_hit_50": 0.0,
+      "mean_iou": 0.0,
+      "mean_dist": 0.3867,
+      "no_pred": 0
+    },
+    "text_to_bbox": {
+      "n": 5,
+      "click_acc": 0.2,
+      "iou_hit_50": 0.0,
+      "mean_iou": 0.0745,
+      "mean_dist": 0.3057,
+      "no_pred": 0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": 0,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "FACILITIES HIRE",
+      "gt_bbox": [
+        0.61875,
+        0.13796296296296295,
+        0.6958333333333333,
+        0.19722222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.2877604166666667,
+        0.07407407407407407
+      ],
+      "pred_bbox": [
+        0.27447916666666666,
+        0.07037037037037037,
+        0.30104166666666665,
+        0.07777777777777778
+      ],
+      "raw_response": "(527, 76, 578, 84)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.38118113546247395,
+      "elapsed_s": 24.079792261123657
+    },
+    {
+      "sample_id": 1,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "REQUEST FOR QUOTATION",
+      "gt_bbox": [
+        0.5,
+        0.53,
+        0.63,
+        0.57
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.5457885,
+        0.59375
+      ],
+      "pred_bbox": [
+        0.476193,
+        0.5875,
+        0.615384,
+        0.6
+      ],
+      "raw_response": "(0.476193, 0.5875, 0.615384, 0.6",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.047782258551160944,
+      "elapsed_s": 15.210892915725708
+    },
+    {
+      "sample_id": 2,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Accept all cookies",
+      "gt_bbox": [
+        0.35,
+        0.6018518518518519,
+        0.6416666666666667,
+        0.6388888888888888
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.21770833333333334,
+        0.274537037037037
+      ],
+      "pred_bbox": [
+        0.1546875,
+        0.2675925925925926,
+        0.28072916666666664,
+        0.2814814814814815
+      ],
+      "raw_response": "(297, 289, 539, 304)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.44379523439244417,
+      "elapsed_s": 14.40924620628357
+    },
+    {
+      "sample_id": 4,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Voyage ADNAL en France - 2024",
+      "gt_bbox": [
+        0.36,
+        0.68,
+        0.5,
+        0.71
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.16848958333333333,
+        0.2050925925925926
+      ],
+      "pred_bbox": [
+        0.10833333333333334,
+        0.20092592592592592,
+        0.22864583333333333,
+        0.20925925925925926
+      ],
+      "raw_response": "(208, 217, 439, 226)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5553350032708375,
+      "elapsed_s": 14.506014108657837
+    },
+    {
+      "sample_id": 5,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Accueil",
+      "gt_bbox": [
+        0.0,
+        0.0,
+        0.99,
+        0.11
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.21875,
+        0.07824074074074074
+      ],
+      "pred_bbox": [
+        0.0,
+        0.0,
+        0.4375,
+        0.15648148148148147
+      ],
+      "raw_response": "(0.0, 0.0, 840.0, 169)",
+      "click_hit": true,
+      "iou_score": 0.37238177460782595,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.2772258908005858,
+      "elapsed_s": 14.643875122070312
+    },
+    {
+      "sample_id": 6,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "zur Startseite",
+      "gt_bbox": [
+        0.44,
+        0.65,
+        0.55,
+        0.69
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.2171875,
+        0.29814814814814816
+      ],
+      "pred_bbox": [
+        0.19479166666666667,
+        0.2916666666666667,
+        0.23958333333333334,
+        0.30462962962962964
+      ],
+      "raw_response": "(374, 315, 460, 329)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.464169780233377,
+      "elapsed_s": 14.511693716049194
+    },
+    {
+      "sample_id": 7,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Driving with Chauffeur Geelong Handpicked Chauffeur Services",
+      "gt_bbox": [
+        0.025,
+        0.47685185185185186,
+        0.2421875,
+        0.4925925925925926
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.465,
+        0.5349999999999999
+      ],
+      "pred_bbox": [
+        0.37,
+        0.49,
+        0.56,
+        0.58
+      ],
+      "raw_response": "(0.37, 0.49, 0.56, 0.58)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.33519838525466394,
+      "elapsed_s": 14.788414239883423
+    },
+    {
+      "sample_id": 8,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Accueil",
+      "gt_bbox": [
+        0.41,
+        0.0,
+        0.52,
+        0.11
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.595,
+        0.185
+      ],
+      "pred_bbox": [
+        0.5,
+        0.17,
+        0.69,
+        0.2
+      ],
+      "raw_response": "(0.5, 0.17, 0.69, 0.2)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.18384776310850237,
+      "elapsed_s": 14.552732467651367
+    }
+  ]
+}

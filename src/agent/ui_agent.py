@@ -429,9 +429,9 @@ class QwenBackend(_VLMBackend):
     # Qwen doesn't use a literal <image> token in the text prompt;
     # the image is passed separately via the processor.
     SOM_PROMPT = (
-        "In this view I need to click a button to \"{instruction}\". "
-        "Provide the coordinates and the mark index of the containing "
-        "bounding box if applicable."
+        "To execute the step \"{instruction}\", "
+        "where do I direct my attention? "
+        "Please provide the coordinate and the bounding box's mark index if applicable."
     )
     QA_PROMPT = "{instruction} Answer the question briefly."
 

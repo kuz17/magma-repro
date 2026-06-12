@@ -1,20 +1,20 @@
 {
   "run": "baseline",
-  "n_evaluated": 8,
-  "n_skipped": 2,
+  "n_evaluated": 153,
+  "n_skipped": 47,
   "click_accuracy": 0.0,
   "iou_hit_50": 0.0,
-  "mean_iou": 0.0,
-  "mean_time_s": 16.6,
+  "mean_iou": 0.0001,
+  "mean_time_s": 16.23,
   "by_task": {
     "text_to_point": {
-      "n": 3,
+      "n": 66,
       "click_acc": 0.0,
       "iou_hit_50": 0.0,
-      "mean_iou": 0.0
+      "mean_iou": 0.0001
     },
     "text_to_bbox": {
-      "n": 5,
+      "n": 87,
       "click_acc": 0.0,
       "iou_hit_50": 0.0,
       "mean_iou": 0.0
@@ -47,7 +47,7 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 22.355671167373657
+      "elapsed_s": 23.31537365913391
     },
     {
       "sample_id": 1,
@@ -67,7 +67,7 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 15.892219543457031
+      "elapsed_s": 15.695715188980103
     },
     {
       "sample_id": 2,
@@ -87,7 +87,7 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 15.157719850540161
+      "elapsed_s": 15.16445517539978
     },
     {
       "sample_id": 4,
@@ -107,7 +107,7 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 15.29090404510498
+      "elapsed_s": 15.883196353912354
     },
     {
       "sample_id": 5,
@@ -127,7 +127,7 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 15.93273663520813
+      "elapsed_s": 16.112775564193726
     },
     {
       "sample_id": 6,
@@ -147,7 +147,7 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 16.11120080947876
+      "elapsed_s": 15.979163885116577
     },
     {
       "sample_id": 7,
@@ -175,7 +175,7 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 15.505379438400269
+      "elapsed_s": 16.446709632873535
     },
     {
       "sample_id": 8,
@@ -195,7 +195,3226 @@
       "click_hit": false,
       "iou_score": 0.0,
       "iou_hit": false,
-      "elapsed_s": 16.553351402282715
+      "elapsed_s": 15.750750064849854
+    },
+    {
+      "sample_id": 10,
+      "task_type": "text_to_bbox",
+      "instruction": "Register Your Business",
+      "gt_bbox": [
+        0.67,
+        0.01,
+        0.78,
+        0.05
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.003125,
+        0.5634259259259259
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.5222222222222223,
+        0.005208333333333333,
+        0.6046296296296296
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [564, 10, 653, 22], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.748931646347046
+    },
+    {
+      "sample_id": 11,
+      "task_type": "text_to_bbox",
+      "instruction": "Contact us",
+      "gt_bbox": [
+        0.64,
+        0.15,
+        0.69,
+        0.17
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.026041666666666668,
+        0.31805555555555554
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.3148148148148148,
+        0.051041666666666666,
+        0.3212962962962963
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [340, 98, 347, 106], \"label",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.751504182815552
+    },
+    {
+      "sample_id": 12,
+      "task_type": "text_to_bbox",
+      "instruction": "MARINE & OFFSHORE ENGINEERING",
+      "gt_bbox": [
+        0.46,
+        0.03,
+        0.62,
+        0.07
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"MARINE & OFFSHORE ENGINEERING\" is located at the top of the page, approximately in the middle horizontally. The button is part",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.122781991958618
+    },
+    {
+      "sample_id": 13,
+      "task_type": "text_to_bbox",
+      "instruction": "Maschinenpark",
+      "gt_bbox": [
+        0.67,
+        0.04,
+        0.77,
+        0.11
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Maschinenpark\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.840134859085083
+    },
+    {
+      "sample_id": 14,
+      "task_type": "text_to_point",
+      "instruction": "Go Back Home",
+      "gt_bbox": [
+        0.3515625,
+        0.5879629629629629,
+        0.4546875,
+        0.6398148148148148
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Go Back Home\" is located at the bottom center of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.820523977279663
+    },
+    {
+      "sample_id": 15,
+      "task_type": "text_to_bbox",
+      "instruction": "Geri",
+      "gt_bbox": [
+        0.2,
+        0.75,
+        0.22,
+        0.78
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.09348958333333333,
+        0.5990740740740741
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.5833333333333334,
+        0.1859375,
+        0.6148148148148148
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [630, 357, 664, 369], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.28343677520752
+    },
+    {
+      "sample_id": 17,
+      "task_type": "text_to_bbox",
+      "instruction": "glass suppliers logo",
+      "gt_bbox": [
+        0.19,
+        0.0,
+        0.34,
+        0.1
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.0005208333333333333,
+        0.2074074074074074
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.1527777777777778,
+        0.0,
+        0.262037037037037
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [165, 0, 283, 49], \"label\": \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.80056357383728
+    },
+    {
+      "sample_id": 18,
+      "task_type": "text_to_bbox",
+      "instruction": "Logo",
+      "gt_bbox": [
+        0.23,
+        0.0,
+        0.33,
+        0.23
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Logo\" is located at the top left corner of the image. The coordinates for the center of the button are approximately:\n\n- Top-left corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.681264400482178
+    },
+    {
+      "sample_id": 20,
+      "task_type": "text_to_bbox",
+      "instruction": "BOOK",
+      "gt_bbox": [
+        0.71,
+        0.09,
+        0.76,
+        0.13
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.012760416666666666,
+        0.575462962962963
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.562962962962963,
+        0.024479166666666666,
+        0.5879629629629629
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [608, 47, 635, 61], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.7832612991333
+    },
+    {
+      "sample_id": 21,
+      "task_type": "text_to_bbox",
+      "instruction": "Widget containing a Cloudflare security challenge",
+      "gt_bbox": [
+        0.26,
+        0.24,
+        0.42,
+        0.3
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the top left corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (1",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.469017028808594
+    },
+    {
+      "sample_id": 23,
+      "task_type": "text_to_bbox",
+      "instruction": "A year in review",
+      "gt_bbox": [
+        0.67,
+        0.8,
+        0.82,
+        0.82
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for the button labeled \"A year in review,\" I would need more specific information about the layout and structure of the",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.02543067932129
+    },
+    {
+      "sample_id": 24,
+      "task_type": "text_to_point",
+      "instruction": "15.01 Brickworks Centre, Ferry Road, Southport Q",
+      "gt_bbox": [
+        0.23697916666666666,
+        0.007407407407407408,
+        0.4083333333333333,
+        0.025
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button for \"15.01 Brickworks Centre, Ferry Road, Southport Q\" is located at the top of the page, near the address",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.9628586769104
+    },
+    {
+      "sample_id": 27,
+      "task_type": "text_to_bbox",
+      "instruction": "Contact your hosting provider",
+      "gt_bbox": [
+        0.16,
+        0.2,
+        0.31,
+        0.22
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Contact your \ud83d\udee0\ufe0fhosting provider\" is located at the following coordinates:\n\n- Top-left corner: (130,",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.261135816574097
+    },
+    {
+      "sample_id": 28,
+      "task_type": "text_to_bbox",
+      "instruction": "WebMaster",
+      "gt_bbox": [
+        0.36,
+        0.17,
+        0.41,
+        0.19
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.020833333333333332,
+        0.19583333333333333
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.1787037037037037,
+        0.040625,
+        0.21296296296296297
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [193, 78, 230, 91], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.28192687034607
+    },
+    {
+      "sample_id": 29,
+      "task_type": "text_to_point",
+      "instruction": "24H MOTOS",
+      "gt_bbox": [
+        0.004166666666666667,
+        0.4074074074074074,
+        0.9880208333333333,
+        0.44166666666666665
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"24H MOTOS\" is located at the top-left corner of the image. The coordinates for this button are approximately:\n\n- Top-left",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.44602608680725
+    },
+    {
+      "sample_id": 30,
+      "task_type": "text_to_point",
+      "instruction": "Tissus - Laine - Mercerie - Retouches",
+      "gt_bbox": [
+        0.6239583333333333,
+        0.4935185185185185,
+        0.7083333333333334,
+        0.5231481481481481
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.06171875,
+        0.4217592592592593
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.39814814814814814,
+        0.12239583333333333,
+        0.44537037037037036
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [430, 235, 481, 246], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.309243202209473
+    },
+    {
+      "sample_id": 31,
+      "task_type": "text_to_bbox",
+      "instruction": "info@captaintouch.be",
+      "gt_bbox": [
+        0.46,
+        0.55,
+        0.54,
+        0.57
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button with the text \"info@captaintouch.be\" is located at approximately the following coordinates:\n\n- X: 390\n- Y:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.60808253288269
+    },
+    {
+      "sample_id": 32,
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Configurez votre domaine",
+      "gt_bbox": [
+        0.4734375,
+        0.24259259259259258,
+        0.5661458333333333,
+        0.30185185185185187
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to configure your domain is located at the top right of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (X:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.210440397262573
+    },
+    {
+      "sample_id": 33,
+      "task_type": "text_to_bbox",
+      "instruction": "contact us",
+      "gt_bbox": [
+        0.35,
+        0.26,
+        0.64,
+        0.29
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.390625,
+        0.000925925925925926
+      ],
+      "pred_bbox": null,
+      "raw_response": "The button to contact \"us\" is located at the top right corner of the page. The coordinates for the button are approximately (750, 1",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.792946577072144
+    },
+    {
+      "sample_id": 35,
+      "task_type": "text_to_bbox",
+      "instruction": "Log in via cPanelID",
+      "gt_bbox": [
+        0.43,
+        0.52,
+        0.57,
+        0.55
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Log in via cPanelID\" is located at the bottom right of the login page. The coordinates for this button are approximately:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.70624351501465
+    },
+    {
+      "sample_id": 37,
+      "task_type": "text_to_bbox",
+      "instruction": "office@vsepamyatniki.by",
+      "gt_bbox": [
+        0.56,
+        0.0,
+        0.65,
+        0.02
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button with the email address \"office@vsepamyatniki.by\" is located at the top right corner of the page. The coordinates for this",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.469916582107544
+    },
+    {
+      "sample_id": 38,
+      "task_type": "text_to_point",
+      "instruction": "My Blog",
+      "gt_bbox": [
+        0.3255208333333333,
+        0.041666666666666664,
+        0.38177083333333334,
+        0.07222222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.005989583333333334,
+        0.27546296296296297
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.25462962962962965,
+        0.0109375,
+        0.2962962962962963
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [275, 21, 320, 34], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.34537649154663
+    },
+    {
+      "sample_id": 39,
+      "task_type": "text_to_point",
+      "instruction": "My Blog",
+      "gt_bbox": [
+        0.3255208333333333,
+        0.041666666666666664,
+        0.38177083333333334,
+        0.07222222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.005989583333333334,
+        0.275
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.25462962962962965,
+        0.0109375,
+        0.2953703703703704
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [275, 21, 319, 34], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.531862497329712
+    },
+    {
+      "sample_id": 40,
+      "task_type": "text_to_point",
+      "instruction": "Bouquetkranz",
+      "gt_bbox": [
+        0.025,
+        0.975,
+        0.08020833333333334,
+        0.9916666666666667
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.008333333333333333,
+        0.02546296296296296
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.017592592592592594,
+        0.015625,
+        0.03333333333333333
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [19, 30, 36, 37], \"label\": \"button",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.267770290374756
+    },
+    {
+      "sample_id": 42,
+      "task_type": "text_to_bbox",
+      "instruction": "GROUNSDSTONE-WHITE",
+      "gt_bbox": [
+        0.07,
+        0.48,
+        0.22,
+        0.61
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.004166666666666667,
+        0.09212962962962963
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.027777777777777776,
+        0.007291666666666667,
+        0.15648148148148147
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [30, 14, 169, 85], \"label\": \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.88386869430542
+    },
+    {
+      "sample_id": 43,
+      "task_type": "text_to_bbox",
+      "instruction": "SUBMISSIONS",
+      "gt_bbox": [
+        0.33,
+        0.24,
+        0.4,
+        0.28
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"SUBMISSIONS\" is located at the top of the page, approximately in the middle horizontally. The coordinates for this button are:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.387163400650024
+    },
+    {
+      "sample_id": 45,
+      "task_type": "text_to_bbox",
+      "instruction": "Got it!",
+      "gt_bbox": [
+        0.91,
+        0.95,
+        0.98,
+        0.99
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (0",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.390953302383423
+    },
+    {
+      "sample_id": 46,
+      "task_type": "text_to_bbox",
+      "instruction": "Lighthouse",
+      "gt_bbox": [
+        0.25,
+        0.02,
+        0.75,
+        0.51
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Lighthouse\" is located at the bottom center of the image. The coordinates for the button are approximately:\n\n- Top-left corner: (x",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.700954675674438
+    },
+    {
+      "sample_id": 47,
+      "task_type": "text_to_point",
+      "instruction": "+375 (29) 105-20-08",
+      "gt_bbox": [
+        0.5770833333333333,
+        0.026851851851851852,
+        0.65625,
+        0.04814814814814815
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.125,
+        0.004166666666666667
+      ],
+      "pred_bbox": [
+        0.1953125,
+        0.026851851851851852,
+        0.0546875,
+        -0.018518518518518517
+      ],
+      "raw_response": "The button with the phone number \"+375 (29) 105-20-08\" is located at the top right corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.54974365234375
+    },
+    {
+      "sample_id": 48,
+      "task_type": "text_to_bbox",
+      "instruction": "Cloudflare",
+      "gt_bbox": [
+        0.53,
+        0.97,
+        0.57,
+        0.98
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The instruction seems to be referring to a web page with a security warning message from Cloudflare. The message indicates that the website 3dlecture.com needs to",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.925916194915771
+    },
+    {
+      "sample_id": 50,
+      "task_type": "text_to_bbox",
+      "instruction": "LEARN MORE",
+      "gt_bbox": [
+        0.69,
+        0.78,
+        0.78,
+        0.82
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.09817708333333333,
+        0.26805555555555555
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.2490740740740741,
+        0.1953125,
+        0.28703703703703703
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [269, 375, 310, 386], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.889146327972412
+    },
+    {
+      "sample_id": 51,
+      "task_type": "text_to_bbox",
+      "instruction": "Widget containing a Cloudflare security challenge",
+      "gt_bbox": [
+        0.26,
+        0.24,
+        0.42,
+        0.3
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The image you provided is a screenshot of a website loading page with a security verification message from Cloudflare. The message indicates that the site connection needs to be reviewed",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.893683433532715
+    },
+    {
+      "sample_id": 52,
+      "task_type": "text_to_point",
+      "instruction": "Brasserie C",
+      "gt_bbox": [
+        0.22083333333333333,
+        0.15,
+        0.28958333333333336,
+        0.20925925925925926
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.005208333333333333,
+        0.3875
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.3675925925925926,
+        0.009375,
+        0.4074074074074074
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [397, 18, 440, 29], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.044970750808716
+    },
+    {
+      "sample_id": 55,
+      "task_type": "text_to_point",
+      "instruction": "Products",
+      "gt_bbox": [
+        0.4354166666666667,
+        0.06666666666666667,
+        0.49947916666666664,
+        0.10462962962962963
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Products\" is located at the top of the page, approximately in the middle horizontally. The coordinates for this button are:\n\n- Top-left corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.915844678878784
+    },
+    {
+      "sample_id": 57,
+      "task_type": "text_to_bbox",
+      "instruction": "Pricing/Extras",
+      "gt_bbox": [
+        0.37,
+        0.15,
+        0.44,
+        0.22
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is labeled \"Pricing/Extras\" and it is located at the top right corner of the page. The coordinates for this button",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.806199312210083
+    },
+    {
+      "sample_id": 58,
+      "task_type": "text_to_point",
+      "instruction": "CHRISTMAS GIFT GUIDE",
+      "gt_bbox": [
+        0.4640625,
+        0.0,
+        0.5651041666666666,
+        0.07777777777777778
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"CHRISTMAS GIFT GUIDE\" is located at the top navigation bar of the webpage. The coordinates for this button are approximately:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.538118124008179
+    },
+    {
+      "sample_id": 59,
+      "task_type": "text_to_bbox",
+      "instruction": "Click to reveal",
+      "gt_bbox": [
+        0.49,
+        0.89,
+        0.54,
+        0.9
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (x",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.893649816513062
+    },
+    {
+      "sample_id": 60,
+      "task_type": "text_to_point",
+      "instruction": "Create your pack",
+      "gt_bbox": [
+        0.50625,
+        0.062037037037037036,
+        0.5619791666666667,
+        0.08518518518518518
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"CREATE YOUR PACK\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.51880931854248
+    },
+    {
+      "sample_id": 61,
+      "task_type": "text_to_point",
+      "instruction": "Recevez gratuitement des devis",
+      "gt_bbox": [
+        0.013020833333333334,
+        0.675,
+        0.15729166666666666,
+        0.6925925925925925
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for the button labeled \"Recevez gratuitement des devis,\" I would need to analyze the image content and locate the",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.083419799804688
+    },
+    {
+      "sample_id": 63,
+      "task_type": "text_to_bbox",
+      "instruction": "tony@forsterestuarycharters.com.au",
+      "gt_bbox": [
+        0.36,
+        0.01,
+        0.48,
+        0.02
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is located at the top right corner of the page, near the email address \"tony@forsterestuarycharters.com",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.33583903312683
+    },
+    {
+      "sample_id": 64,
+      "task_type": "text_to_bbox",
+      "instruction": "greenphoneicon",
+      "gt_bbox": [
+        0.9,
+        0.02,
+        0.91,
+        0.04
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is located at the top right corner of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (0",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.505762577056885
+    },
+    {
+      "sample_id": 65,
+      "task_type": "text_to_bbox",
+      "instruction": "http://blog.livedoor.jp/neomani/index.rdf",
+      "gt_bbox": [
+        0.38,
+        0.93,
+        0.55,
+        0.95
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right corner of the image. The coordinates for this button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.1240496635437
+    },
+    {
+      "sample_id": 66,
+      "task_type": "text_to_bbox",
+      "instruction": "You can eat healthy during the HOLIDAYS!",
+      "gt_bbox": [
+        0.2,
+        0.21,
+        0.64,
+        0.26
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.026041666666666668,
+        0.32685185185185184
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.1574074074074074,
+        0.051041666666666666,
+        0.4962962962962963
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [170, 98, 536, 124], \"label",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.275311946868896
+    },
+    {
+      "sample_id": 69,
+      "task_type": "text_to_point",
+      "instruction": "info@noosachildcare.com.au",
+      "gt_bbox": [
+        0.65,
+        0.007407407407407408,
+        0.7833333333333333,
+        0.026851851851851852
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.0015625,
+        0.5634259259259259
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.5185185185185185,
+        0.0020833333333333333,
+        0.6083333333333333
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [560, 4, 657, 13], \"label\": \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.766775369644165
+    },
+    {
+      "sample_id": 70,
+      "task_type": "text_to_bbox",
+      "instruction": "PUBLICATIONS",
+      "gt_bbox": [
+        0.56,
+        0.11,
+        0.64,
+        0.15
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.03794240951538
+    },
+    {
+      "sample_id": 73,
+      "task_type": "text_to_point",
+      "instruction": "What are the pros and cons of combo brows?",
+      "gt_bbox": [
+        0.196875,
+        0.7287037037037037,
+        0.37083333333333335,
+        0.775
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.09114583333333333,
+        0.22083333333333333
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.15462962962962962,
+        0.18125,
+        0.28703703703703703
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [167, 348, 310, 370], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.429267644882202
+    },
+    {
+      "sample_id": 74,
+      "task_type": "text_to_bbox",
+      "instruction": "Entdecke mehr dazu auf unserer Webseite!",
+      "gt_bbox": [
+        0.58,
+        0.46,
+        0.74,
+        0.48
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right of the image. The coordinates for the button are approximately:\n\n- Top-left corner: (x=",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.154529333114624
+    },
+    {
+      "sample_id": 76,
+      "task_type": "text_to_bbox",
+      "instruction": "SHOWREEL",
+      "gt_bbox": [
+        0.78,
+        0.02,
+        0.82,
+        0.04
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for the \"SHOWREEL\" button, I would need more specific information about the layout and design of your webpage",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.172677516937256
+    },
+    {
+      "sample_id": 78,
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Configurez votre domaine",
+      "gt_bbox": [
+        0.4734375,
+        0.24259259259259258,
+        0.5661458333333333,
+        0.30185185185185187
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to configure your domain is located at the top right of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (X:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.12067461013794
+    },
+    {
+      "sample_id": 80,
+      "task_type": "text_to_bbox",
+      "instruction": "Resources",
+      "gt_bbox": [
+        0.69,
+        0.1,
+        0.76,
+        0.14
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.013020833333333334,
+        0.5657407407407408
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.549074074074074,
+        0.025,
+        0.5824074074074074
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [593, 48, 629, 61], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.300118923187256
+    },
+    {
+      "sample_id": 81,
+      "task_type": "text_to_bbox",
+      "instruction": "TEXNIKA.BY",
+      "gt_bbox": [
+        0.16,
+        0.13,
+        0.47,
+        0.17
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"\u0422\u0415\u0425\u041d\u0418\u041a\u0410.\u0411\u0423\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n-",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.16060709953308
+    },
+    {
+      "sample_id": 83,
+      "task_type": "text_to_bbox",
+      "instruction": "GO BACK",
+      "gt_bbox": [
+        0.33,
+        0.11,
+        0.38,
+        0.14
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for the button labeled \"GO BACK,\" I would need to know the specific image or screenshot you're referring to.",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.04020619392395
+    },
+    {
+      "sample_id": 84,
+      "task_type": "text_to_bbox",
+      "instruction": "Offene Stellen",
+      "gt_bbox": [
+        0.21,
+        0.44,
+        0.28,
+        0.48
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for the button labeled \"Offene Stellen,\" I would need to analyze the image and identify the specific location of",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.049796104431152
+    },
+    {
+      "sample_id": 85,
+      "task_type": "text_to_point",
+      "instruction": "Mehr Zeit zum Wohnen",
+      "gt_bbox": [
+        0.0234375,
+        0.11481481481481481,
+        0.13645833333333332,
+        0.1388888888888889
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Mehr Zeit zum Wohnen\" is located at the top left of the page. The coordinates for this button are approximately:\n\n- Top-left",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.148836374282837
+    },
+    {
+      "sample_id": 87,
+      "task_type": "text_to_point",
+      "instruction": "LogoBoutiqueAlizeeHeader",
+      "gt_bbox": [
+        0.196875,
+        0.9574074074074074,
+        0.30104166666666665,
+        0.9944444444444445
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To assist you with clicking on the button labeled \"LogoBoutiqueAlizeeHeader,\" I'll need to identify its position within the image. However,",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.216675996780396
+    },
+    {
+      "sample_id": 88,
+      "task_type": "text_to_point",
+      "instruction": "Patienteninfos",
+      "gt_bbox": [
+        0.521875,
+        0.17037037037037037,
+        0.5901041666666667,
+        0.21296296296296297
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Patienteninfos\" is located at the top right section of the webpage. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.26915669441223
+    },
+    {
+      "sample_id": 89,
+      "task_type": "text_to_point",
+      "instruction": "Instagram",
+      "gt_bbox": [
+        0.025,
+        0.8018518518518518,
+        0.21666666666666667,
+        0.8175925925925925
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button for Instagram is located at the following coordinates:\n\n- Top-left corner: (10, 38)\n- Bottom-right corner: (25",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.15554690361023
+    },
+    {
+      "sample_id": 90,
+      "task_type": "text_to_point",
+      "instruction": "GET A QUOTE",
+      "gt_bbox": [
+        0.3572916666666667,
+        0.014814814814814815,
+        0.4192708333333333,
+        0.04351851851851852
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"GET A QUOTE\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.970763206481934
+    },
+    {
+      "sample_id": 91,
+      "task_type": "text_to_point",
+      "instruction": "FRC Team 5064",
+      "gt_bbox": [
+        0.0,
+        0.013888888888888888,
+        0.22916666666666666,
+        0.058333333333333334
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.003125,
+        0.08796296296296297
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.03981481481481482,
+        0.005208333333333333,
+        0.1361111111111111
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [43, 10, 147, 28], \"label\": \"",
+      "click_hit": false,
+      "iou_score": 0.007342143906020558,
+      "iou_hit": false,
+      "elapsed_s": 15.989747524261475
+    },
+    {
+      "sample_id": 92,
+      "task_type": "text_to_point",
+      "instruction": "+375 (29) 758-19-84",
+      "gt_bbox": [
+        0.60625,
+        0.04351851851851852,
+        0.7270833333333333,
+        0.062037037037037036
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.2950520833333333,
+        0.004629629629629629
+      ],
+      "pred_bbox": [
+        0.1953125,
+        0.026851851851851852,
+        0.39479166666666665,
+        -0.017592592592592594
+      ],
+      "raw_response": "The button with the phone number \"+375 (29) 758-19-84\" is located at the top right corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.480464935302734
+    },
+    {
+      "sample_id": 93,
+      "task_type": "text_to_bbox",
+      "instruction": "+375(29)184-77-88",
+      "gt_bbox": [
+        0.63,
+        0.03,
+        0.71,
+        0.05
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.14557291666666666,
+        -0.022222222222222223
+      ],
+      "pred_bbox": [
+        0.1953125,
+        0.026851851851851852,
+        0.09583333333333334,
+        -0.0712962962962963
+      ],
+      "raw_response": "The button with the phone number \"+375(29)184-77-88\" is located at the top right corner of",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.222811698913574
+    },
+    {
+      "sample_id": 94,
+      "task_type": "text_to_bbox",
+      "instruction": "Marketing",
+      "gt_bbox": [
+        0.35,
+        0.06,
+        0.42,
+        0.13
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Marketing\" is located at the top navigation bar of the website. The coordinates for this button are approximately:\n\n- Top-left corner: (1",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.672661304473877
+    },
+    {
+      "sample_id": 96,
+      "task_type": "text_to_point",
+      "instruction": "Technology Tips",
+      "gt_bbox": [
+        0.240625,
+        0.024074074074074074,
+        0.36354166666666665,
+        0.05462962962962963
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Technology Tips\" is located at the top left corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.677563905715942
+    },
+    {
+      "sample_id": 98,
+      "task_type": "text_to_bbox",
+      "instruction": "02 4975 1411",
+      "gt_bbox": [
+        0.76,
+        0.06,
+        0.85,
+        0.12
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button with the text \"02 4975 1411\" is located at the top right corner of the image. The coordinates",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.327879667282104
+    },
+    {
+      "sample_id": 100,
+      "task_type": "text_to_point",
+      "instruction": "Premium Domain Names",
+      "gt_bbox": [
+        0.025,
+        0.020370370370370372,
+        0.12916666666666668,
+        0.058333333333333334
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To assist you with clicking on the \"Premium Domain Names\" button, I would need more specific information about the layout and design of the webpage. However, based",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.056155681610107
+    },
+    {
+      "sample_id": 101,
+      "task_type": "text_to_bbox",
+      "instruction": "Wachtwoord vergeten ?",
+      "gt_bbox": [
+        0.51,
+        0.43,
+        0.6,
+        0.46
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Wachtwoord vergeten?\" is located at approximately the following coordinates:\n\n- Top-left corner: (x=300, y",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.113555908203125
+    },
+    {
+      "sample_id": 102,
+      "task_type": "text_to_bbox",
+      "instruction": "Sign Up",
+      "gt_bbox": [
+        0.55,
+        0.29,
+        0.61,
+        0.33
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the top right section of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.86765193939209
+    },
+    {
+      "sample_id": 103,
+      "task_type": "text_to_bbox",
+      "instruction": "info@bois-formes-espaces.be",
+      "gt_bbox": [
+        0.52,
+        0.01,
+        0.63,
+        0.03
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.05868172645569
+    },
+    {
+      "sample_id": 104,
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"info",
+      "gt_bbox": [
+        0.425,
+        0.08611111111111111,
+        0.51875,
+        0.13055555555555556
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is likely labeled \"EXECUTE\" or something similar. Based on typical user interface conventions, it might be located near the top right",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.222950220108032
+    },
+    {
+      "sample_id": 105,
+      "task_type": "text_to_bbox",
+      "instruction": "Velika Sport Vision rasprodaja na Stupu-popusti do 70%",
+      "gt_bbox": [
+        0.36,
+        0.28,
+        0.46,
+        0.3
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is located at the top right corner of the image. The coordinates for this button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.450581312179565
+    },
+    {
+      "sample_id": 106,
+      "task_type": "text_to_point",
+      "instruction": "Cloudflare",
+      "gt_bbox": [
+        0.5302083333333333,
+        0.9703703703703703,
+        0.5677083333333334,
+        0.9833333333333333
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The instruction seems to be referring to a web page with a security warning message from Cloudflare. The message indicates that the website `cotr.arcabc.ca`",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.95781946182251
+    },
+    {
+      "sample_id": 107,
+      "task_type": "text_to_bbox",
+      "instruction": "CONTACT US",
+      "gt_bbox": [
+        0.71,
+        0.04,
+        0.79,
+        0.09
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"CONTACT US\" is located at the top right corner of the webpage. The coordinates for this button are approximately:\n\n- Top-left corner: (",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.320775747299194
+    },
+    {
+      "sample_id": 110,
+      "task_type": "text_to_point",
+      "instruction": "Email: management@170offthirdoa.com",
+      "gt_bbox": [
+        0.584375,
+        0.8592592592592593,
+        0.696875,
+        0.8731481481481481
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.11888551712036
+    },
+    {
+      "sample_id": 111,
+      "task_type": "text_to_point",
+      "instruction": "Mini Handle",
+      "gt_bbox": [
+        0.584375,
+        0.5981481481481481,
+        0.7677083333333333,
+        0.9111111111111111
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for clicking on the \"Mini Handle\" button, I would need more specific information about the layout and structure of the",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.40011239051819
+    },
+    {
+      "sample_id": 112,
+      "task_type": "text_to_bbox",
+      "instruction": "Second Mortgage",
+      "gt_bbox": [
+        0.59,
+        0.03,
+        0.66,
+        0.12
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"SECOND MORTGAGE\" is located at the top of the page, approximately in the middle horizontally. The coordinates for this button are:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.682406425476074
+    },
+    {
+      "sample_id": 114,
+      "task_type": "text_to_bbox",
+      "instruction": "MICROSOFT DYNAMICS 365",
+      "gt_bbox": [
+        0.08,
+        0.48,
+        0.53,
+        0.55
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To achieve your goal of clicking on the button labeled \"MICROSOFT DYNAMICS 365,\" you should look for a button with that text",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.721130132675171
+    },
+    {
+      "sample_id": 116,
+      "task_type": "text_to_point",
+      "instruction": "LOG IN",
+      "gt_bbox": [
+        0.4015625,
+        0.6444444444444445,
+        0.5984375,
+        0.6814814814814815
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"LOG IN\" is located at the bottom center of the login screen. The coordinates for this button are approximately:\n\n- Top-left corner: (",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.7565438747406
+    },
+    {
+      "sample_id": 117,
+      "task_type": "text_to_bbox",
+      "instruction": "My Work",
+      "gt_bbox": [
+        0.66,
+        0.03,
+        0.69,
+        0.07
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"My Work\" is located at the top navigation bar of the website. The coordinates for this button are approximately:\n\n- Top-left corner: (",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.29161047935486
+    },
+    {
+      "sample_id": 119,
+      "task_type": "text_to_point",
+      "instruction": "golfinsight-v2.png",
+      "gt_bbox": [
+        0.25625,
+        0.026851851851851852,
+        0.38385416666666666,
+        0.07777777777777778
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.802308082580566
+    },
+    {
+      "sample_id": 120,
+      "task_type": "text_to_point",
+      "instruction": "Anfrage stellen",
+      "gt_bbox": [
+        0.0,
+        0.0,
+        0.33958333333333335,
+        0.030555555555555555
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is located at the top right corner of the page, near the navigation menu. The coordinates for this button are approximately:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.148672819137573
+    },
+    {
+      "sample_id": 122,
+      "task_type": "text_to_bbox",
+      "instruction": "Evaluations Certifications",
+      "gt_bbox": [
+        0.24,
+        0.06,
+        0.35,
+        0.1
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is located at the top of the page, within the navigation bar. The coordinates for this button are approximately:\n\n- Top-left corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.858186960220337
+    },
+    {
+      "sample_id": 123,
+      "task_type": "text_to_bbox",
+      "instruction": "Moorebank Uniforms & Embroidery - Schoolwear and Workwear",
+      "gt_bbox": [
+        0.23,
+        0.16,
+        0.33,
+        0.23
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.020833333333333332,
+        0.21435185185185185
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.17592592592592593,
+        0.040625,
+        0.25277777777777777
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [190, 78, 273, 116], \"label",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.21639657020569
+    },
+    {
+      "sample_id": 124,
+      "task_type": "text_to_bbox",
+      "instruction": "ABC of when to celebrate the Islamic guest! + G",
+      "gt_bbox": [
+        0.0,
+        0.01,
+        0.35,
+        0.04
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.0015625,
+        0.1337962962962963
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.0,
+        0.0020833333333333333,
+        0.2675925925925926
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [0, 4, 289, 16], \"label\": \"button\"}",
+      "click_hit": false,
+      "iou_score": 0.0029076550300637174,
+      "iou_hit": false,
+      "elapsed_s": 15.632061243057251
+    },
+    {
+      "sample_id": 125,
+      "task_type": "text_to_bbox",
+      "instruction": "Alle Cookies akzeptieren",
+      "gt_bbox": [
+        0.59,
+        0.96,
+        0.96,
+        1.0
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to \"Alle Cookies akzeptieren\" is located at the bottom right corner of the page. The coordinates for this button are approximately:\n\n- Top-left",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.974790096282959
+    },
+    {
+      "sample_id": 126,
+      "task_type": "text_to_bbox",
+      "instruction": "CD & DVD",
+      "gt_bbox": [
+        0.24,
+        0.73,
+        0.38,
+        0.79
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"CD & DVD\" is located at the bottom of the page, approximately in the middle vertically. The coordinates for this button are:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.11541438102722
+    },
+    {
+      "sample_id": 127,
+      "task_type": "text_to_bbox",
+      "instruction": "FREE DOWNLOADS",
+      "gt_bbox": [
+        0.46,
+        0.13,
+        0.53,
+        0.16
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"FREE DOWNLOADS\" is located at the top navigation bar of the website. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.774532556533813
+    },
+    {
+      "sample_id": 128,
+      "task_type": "text_to_bbox",
+      "instruction": "dawnlatexmattresseslogo_wss_3",
+      "gt_bbox": [
+        0.03,
+        0.05,
+        0.17,
+        0.16
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.00546875,
+        0.06712962962962964
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.0,
+        0.009895833333333333,
+        0.13425925925925927
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [0, 19, 145, 78], \"label\": \"button",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.800317764282227
+    },
+    {
+      "sample_id": 129,
+      "task_type": "text_to_point",
+      "instruction": "First Bank Hampton, Hampton, IA",
+      "gt_bbox": [
+        0.004166666666666667,
+        0.525,
+        0.9880208333333333,
+        0.9694444444444444
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.009635416666666667,
+        0.08194444444444444
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.009259259259259259,
+        0.018229166666666668,
+        0.15462962962962962
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [10, 35, 167, 44], \"label\": \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.800414323806763
+    },
+    {
+      "sample_id": 130,
+      "task_type": "text_to_point",
+      "instruction": "The Italian Feast Sun 19 Nov 2023",
+      "gt_bbox": [
+        0.2677083333333333,
+        0.7194444444444444,
+        0.38645833333333335,
+        0.7787037037037037
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.009895833333333333,
+        1.8731481481481482
+      ],
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for the button labeled \"The Italian Feast Sun 19 Nov 2023,\" I would need more",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.077698469161987
+    },
+    {
+      "sample_id": 131,
+      "task_type": "text_to_point",
+      "instruction": "THE EASIEST WAY TO YOP UP YOUR MOBILE",
+      "gt_bbox": [
+        0.2604166666666667,
+        0.12037037037037036,
+        0.64375,
+        0.20277777777777778
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the top of the page, near the header. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.023810863494873
+    },
+    {
+      "sample_id": 132,
+      "task_type": "text_to_point",
+      "instruction": "web Design",
+      "gt_bbox": [
+        0.04583333333333333,
+        0.39444444444444443,
+        0.08541666666666667,
+        0.4101851851851852
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.090625,
+        0.020370370370370372
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.013888888888888888,
+        0.18020833333333333,
+        0.026851851851851852
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [15, 346, 29, 357], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.556328535079956
+    },
+    {
+      "sample_id": 134,
+      "task_type": "text_to_bbox",
+      "instruction": "Navigation aufklappen/zuklappen",
+      "gt_bbox": [
+        0.0,
+        0.01,
+        0.11,
+        0.02
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to \"Navigation aufklappen/zuklappen\" is located at the top left corner of the page. The coordinates for this button are approximately:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.671332359313965
+    },
+    {
+      "sample_id": 135,
+      "task_type": "text_to_point",
+      "instruction": "Contact Us",
+      "gt_bbox": [
+        0.7479166666666667,
+        0.046296296296296294,
+        0.78125,
+        0.06666666666666667
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to contact the service is located at the bottom right corner of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.895166397094727
+    },
+    {
+      "sample_id": 136,
+      "task_type": "text_to_bbox",
+      "instruction": "Contact support",
+      "gt_bbox": [
+        0.04,
+        0.31,
+        0.41,
+        0.33
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.020833333333333332,
+        0.1388888888888889
+      ],
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Contact support\" is located at the following coordinates:\n\n- X: 40\n- Y: 150\n\nThe button is",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.289640426635742
+    },
+    {
+      "sample_id": 137,
+      "task_type": "text_to_point",
+      "instruction": "Back to Home",
+      "gt_bbox": [
+        0.4479166666666667,
+        0.6481481481481481,
+        0.5447916666666667,
+        0.6916666666666667
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.23060941696167
+    },
+    {
+      "sample_id": 139,
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"",
+      "gt_bbox": [
+        0.26979166666666665,
+        0.10648148148148148,
+        0.32395833333333335,
+        0.18796296296296297
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.010416666666666666,
+        0.2023148148148148
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.17592592592592593,
+        0.019791666666666666,
+        0.22870370370370371
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [190, 38, 247, 56], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.880683183670044
+    },
+    {
+      "sample_id": 141,
+      "task_type": "text_to_point",
+      "instruction": "Click to reveal",
+      "gt_bbox": [
+        0.4921875,
+        0.8851851851851852,
+        0.5348958333333333,
+        0.9037037037037037
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (x",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.633367776870728
+    },
+    {
+      "sample_id": 142,
+      "task_type": "text_to_point",
+      "instruction": "Homepage bauzeit-architekten",
+      "gt_bbox": [
+        0.13020833333333334,
+        0.017592592592592594,
+        0.3765625,
+        0.125
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To navigate back to the homepage of \"bauzeit-architekten,\" you should click on the button labeled \"retour \u00e0 l'aper\u00e7u\"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.937494993209839
+    },
+    {
+      "sample_id": 144,
+      "task_type": "text_to_point",
+      "instruction": "My Blog",
+      "gt_bbox": [
+        0.3255208333333333,
+        0.041666666666666664,
+        0.38177083333333334,
+        0.07222222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.052083333333333336,
+        0.001851851851851852
+      ],
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"My Blog\" is located at the top left corner of the page. The coordinates for this button are approximately (100, 2",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.51401138305664
+    },
+    {
+      "sample_id": 145,
+      "task_type": "text_to_bbox",
+      "instruction": "Meanwhile in Bavaria by Kevin MacLeod",
+      "gt_bbox": [
+        0.31,
+        0.96,
+        0.45,
+        0.97
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is located at the bottom of the page, near the end of the content. The text \"Meanwhile in Bavaria by Kevin Mac",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.276083946228027
+    },
+    {
+      "sample_id": 146,
+      "task_type": "text_to_bbox",
+      "instruction": "KURSE",
+      "gt_bbox": [
+        0.25,
+        0.2,
+        0.4,
+        0.3
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"KURSE\" is located at the top of the page, approximately in the middle vertically. The coordinates for this button are:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.17082715034485
+    },
+    {
+      "sample_id": 147,
+      "task_type": "text_to_bbox",
+      "instruction": "Guide on how to calculate Printing on Website",
+      "gt_bbox": [
+        0.78,
+        0.15,
+        0.94,
+        0.19
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.019791666666666666,
+        0.6685185185185185
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.6092592592592593,
+        0.03854166666666667,
+        0.7277777777777777
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [658, 74, 786, 89], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.790381669998169
+    },
+    {
+      "sample_id": 149,
+      "task_type": "text_to_bbox",
+      "instruction": "https://t.me/aircchat",
+      "gt_bbox": [
+        0.51,
+        0.94,
+        0.58,
+        0.95
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.052083333333333336,
+        0.3851851851851852
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.375,
+        0.103125,
+        0.39537037037037037
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [405, 198, 427, 210], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.159152269363403
+    },
+    {
+      "sample_id": 150,
+      "task_type": "text_to_bbox",
+      "instruction": "THEATRE",
+      "gt_bbox": [
+        0.4,
+        0.21,
+        0.46,
+        0.24
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"THEATRE\" is located at the top of the page, approximately in the center horizontally. The coordinates for this button are:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.329508781433105
+    },
+    {
+      "sample_id": 151,
+      "task_type": "text_to_point",
+      "instruction": "MEMBERSHIP ET PAIEMENT",
+      "gt_bbox": [
+        0.47604166666666664,
+        0.21481481481481482,
+        0.5848958333333333,
+        0.25462962962962965
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"MEMBERSHIP ET PAIEMENT\" is located at the top of the page, approximately in the middle horizontally. The coordinates for this button",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.10643243789673
+    },
+    {
+      "sample_id": 152,
+      "task_type": "text_to_bbox",
+      "instruction": "Automotive Locksmiths Adelaide",
+      "gt_bbox": [
+        0.24,
+        0.02,
+        0.39,
+        0.11
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.923478603363037
+    },
+    {
+      "sample_id": 153,
+      "task_type": "text_to_bbox",
+      "instruction": "Se connecter",
+      "gt_bbox": [
+        0.88,
+        0.0,
+        0.94,
+        0.06
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to \"Se connecter\" is located at the top right corner of the page. The coordinates for the button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.048935174942017
+    },
+    {
+      "sample_id": 154,
+      "task_type": "text_to_point",
+      "instruction": "CONSIGNMENT",
+      "gt_bbox": [
+        0.5473958333333333,
+        0.08425925925925926,
+        0.5994791666666667,
+        0.10185185185185185
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.010677083333333334,
+        0.4462962962962963
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.42685185185185187,
+        0.0203125,
+        0.46574074074074073
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [461, 39, 503, 48], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.113311767578125
+    },
+    {
+      "sample_id": 155,
+      "task_type": "text_to_bbox",
+      "instruction": "Additional troubleshooting information here.",
+      "gt_bbox": [
+        0.5,
+        0.82,
+        0.72,
+        0.84
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom right corner of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (x",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.693934440612793
+    },
+    {
+      "sample_id": 157,
+      "task_type": "text_to_bbox",
+      "instruction": "Envia'Ns Un WhatsApp!",
+      "gt_bbox": [
+        0.7,
+        0.05,
+        0.81,
+        0.09
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you're referring to is located at the top right corner of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (X",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.365085124969482
+    },
+    {
+      "sample_id": 158,
+      "task_type": "text_to_bbox",
+      "instruction": "Rates & Specials",
+      "gt_bbox": [
+        0.54,
+        0.26,
+        0.61,
+        0.3
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.76236891746521
+    },
+    {
+      "sample_id": 159,
+      "task_type": "text_to_point",
+      "instruction": "Support",
+      "gt_bbox": [
+        0.32864583333333336,
+        0.5851851851851851,
+        0.35520833333333335,
+        0.600925925925926
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.07239583333333334,
+        0.2662037037037037
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.2574074074074074,
+        0.14375,
+        0.275
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [278, 276, 297, 287], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.035581350326538
+    },
+    {
+      "sample_id": 160,
+      "task_type": "text_to_bbox",
+      "instruction": "Home",
+      "gt_bbox": [
+        0.62,
+        0.02,
+        0.67,
+        0.08
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To navigate to the home page in this website, you would typically look for a button or link labeled \"Home\" or something similar. Since you haven't provided",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.564215898513794
+    },
+    {
+      "sample_id": 161,
+      "task_type": "text_to_point",
+      "instruction": "Povrat proizvoda, novca i reklamacije",
+      "gt_bbox": [
+        0.5145833333333333,
+        0.5212962962962963,
+        0.6072916666666667,
+        0.5657407407407408
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is located at the bottom of the page, towards the right side. The coordinates for this button are approximately:\n\n- Top-left corner",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.58344054222107
+    },
+    {
+      "sample_id": 162,
+      "task_type": "text_to_bbox",
+      "instruction": "Films Streaming",
+      "gt_bbox": [
+        0.65,
+        0.16,
+        0.72,
+        0.18
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Films Streaming\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.480369567871094
+    },
+    {
+      "sample_id": 163,
+      "task_type": "text_to_point",
+      "instruction": "Events & Resources",
+      "gt_bbox": [
+        0.653125,
+        0.08333333333333333,
+        0.7723958333333333,
+        0.1287037037037037
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Events & Resources\" is located at the top navigation bar of the website. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.286436796188354
+    },
+    {
+      "sample_id": 164,
+      "task_type": "text_to_bbox",
+      "instruction": "Pulsuz Konsultasiya",
+      "gt_bbox": [
+        0.16,
+        0.52,
+        0.25,
+        0.56
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Pulsuz Konsultasiya\" is located at the top left corner of the page. The coordinates for this button are approximately:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.873728513717651
+    },
+    {
+      "sample_id": 167,
+      "task_type": "text_to_point",
+      "instruction": "KONTAKT AUFNEHMEN",
+      "gt_bbox": [
+        0.9036458333333334,
+        0.8907407407407407,
+        0.9973958333333334,
+        0.95
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"KONTAKT AUFNEHMEN\" is located at the bottom right corner of the webpage. The coordinates for this button are approximately",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.709707498550415
+    },
+    {
+      "sample_id": 168,
+      "task_type": "text_to_point",
+      "instruction": "Physical Activity Australia",
+      "gt_bbox": [
+        0.39166666666666666,
+        0.11851851851851852,
+        0.6,
+        0.17592592592592593
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Physical Activity Australia\" is located at the top of the page, near the navigation bar. The coordinates for this button are approximately:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.139476776123047
+    },
+    {
+      "sample_id": 169,
+      "task_type": "text_to_bbox",
+      "instruction": "Advertisement",
+      "gt_bbox": [
+        0.63,
+        0.44,
+        0.79,
+        0.67
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.04296875,
+        0.3861111111111111
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.0,
+        0.08489583333333334,
+        0.7722222222222223
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [0, 163, 834, 325], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.24704384803772
+    },
+    {
+      "sample_id": 170,
+      "task_type": "text_to_point",
+      "instruction": "Bekijk ons beleid",
+      "gt_bbox": [
+        0.008333333333333333,
+        0.17592592592592593,
+        0.30885416666666665,
+        0.2111111111111111
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Bekijk ons beleid\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.419862508773804
+    },
+    {
+      "sample_id": 171,
+      "task_type": "text_to_bbox",
+      "instruction": "Broomehill to Kulin Trek 2019",
+      "gt_bbox": [
+        0.26,
+        0.43,
+        0.38,
+        0.46
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.054427083333333334,
+        0.24675925925925926
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.19907407407407407,
+        0.1078125,
+        0.29444444444444445
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [215, 207, 318, 220], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.33697271347046
+    },
+    {
+      "sample_id": 172,
+      "task_type": "text_to_bbox",
+      "instruction": "Search events",
+      "gt_bbox": [
+        0.09,
+        0.01,
+        0.28,
+        0.05
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button to search for events is located at the top left corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (0",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.44190549850464
+    },
+    {
+      "sample_id": 173,
+      "task_type": "text_to_point",
+      "instruction": "Harold Man",
+      "gt_bbox": [
+        0.44895833333333335,
+        0.09351851851851851,
+        0.5432291666666667,
+        0.2611111111111111
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.08125,
+        0.3384259259259259
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.2814814814814815,
+        0.16145833333333334,
+        0.39537037037037037
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [304, 310, 427, 330], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.470539808273315
+    },
+    {
+      "sample_id": 174,
+      "task_type": "text_to_bbox",
+      "instruction": "Followers",
+      "gt_bbox": [
+        0.4,
+        0.19,
+        0.74,
+        0.82
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Followers\" is located at the top right section of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.323936700820923
+    },
+    {
+      "sample_id": 176,
+      "task_type": "text_to_point",
+      "instruction": "HOME",
+      "gt_bbox": [
+        0.7479166666666667,
+        0.053703703703703705,
+        0.790625,
+        0.0787037037037037
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"HOME\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner: (0",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.08575201034546
+    },
+    {
+      "sample_id": 177,
+      "task_type": "text_to_bbox",
+      "instruction": "Powerful Prayers + Scriptures",
+      "gt_bbox": [
+        0.44,
+        0.17,
+        0.56,
+        0.21
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.022916666666666665,
+        0.3907407407407407
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.3509259259259259,
+        0.04479166666666667,
+        0.4305555555555556
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [379, 86, 465, 96], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.891896963119507
+    },
+    {
+      "sample_id": 178,
+      "task_type": "text_to_point",
+      "instruction": "Julian Rodrigues Horizontal-WEB",
+      "gt_bbox": [
+        0.09895833333333333,
+        0.009259259259259259,
+        0.2796875,
+        0.07222222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To assist you with clicking the button labeled \"Julian Rodrigues Horizontal-WEB,\" I'll need to identify its position on the webpage. Since I don't",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.39884853363037
+    },
+    {
+      "sample_id": 179,
+      "task_type": "text_to_point",
+      "instruction": "ACC Okanagan",
+      "gt_bbox": [
+        0.23802083333333332,
+        0.024074074074074074,
+        0.37135416666666665,
+        0.06759259259259259
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"ACC Okanagan\" is located at the top left corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 15.945858716964722
+    },
+    {
+      "sample_id": 180,
+      "task_type": "text_to_point",
+      "instruction": "Enroll",
+      "gt_bbox": [
+        0.46458333333333335,
+        0.009259259259259259,
+        0.5322916666666667,
+        0.05092592592592592
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To enroll, you need to click on the button labeled \"Enroll\" located at the top right corner of the page. The coordinates for this button are approximately",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.546692609786987
+    },
+    {
+      "sample_id": 181,
+      "task_type": "text_to_bbox",
+      "instruction": "LiteSpeed Web Server",
+      "gt_bbox": [
+        0.07,
+        0.93,
+        0.14,
+        0.94
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you are referring to is located at the bottom left corner of the page. The coordinates for the button are approximately:\n\n- Top-left corner: (0",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.588193655014038
+    },
+    {
+      "sample_id": 182,
+      "task_type": "text_to_bbox",
+      "instruction": "SMM",
+      "gt_bbox": [
+        0.02,
+        0.65,
+        0.12,
+        0.69
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To click on the button labeled \"SMM,\" you should look for a button with the text \"SMM\" located near the bottom left section of the page",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.3581440448761
+    },
+    {
+      "sample_id": 183,
+      "task_type": "text_to_point",
+      "instruction": "ESSENTIAL CONVEYANCING",
+      "gt_bbox": [
+        0.39479166666666665,
+        0.08611111111111111,
+        0.5979166666666667,
+        0.13518518518518519
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"ESSENTIAL CONVEYANCING\" is located at the top of the page, near the navigation bar. The coordinates for this button",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.024709939956665
+    },
+    {
+      "sample_id": 184,
+      "task_type": "text_to_bbox",
+      "instruction": "Bart H.",
+      "gt_bbox": [
+        0.19,
+        0.48,
+        0.38,
+        0.73
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Bart H.\" is located at the top right corner of the page. The coordinates for this button are approximately:\n\n- Top-left corner:",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.376309394836426
+    },
+    {
+      "sample_id": 185,
+      "task_type": "text_to_point",
+      "instruction": "caotina sachets, voir +...",
+      "gt_bbox": [
+        0.5666666666666667,
+        0.19907407407407407,
+        0.6145833333333334,
+        0.28425925925925927
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.02734375,
+        0.4847222222222222
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.4425925925925926,
+        0.05364583333333333,
+        0.5268518518518519
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [478, 103, 569, 139], \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.98925471305847
+    },
+    {
+      "sample_id": 186,
+      "task_type": "text_to_bbox",
+      "instruction": "Paralympics Australia",
+      "gt_bbox": [
+        0.11,
+        0.14,
+        0.88,
+        0.82
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for clicking on the \"Paralympics Australia\" button, I would need more specific information about the image or",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.005223989486694
+    },
+    {
+      "sample_id": 187,
+      "task_type": "text_to_bbox",
+      "instruction": "Fed Weekend 2016",
+      "gt_bbox": [
+        0.49,
+        0.16,
+        0.57,
+        0.19
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        1.05,
+        0.003703703703703704
+      ],
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Fed Weekend 2016\" is located at the top right corner of the page. The coordinates for this button are approximately (4",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.838672161102295
+    },
+    {
+      "sample_id": 188,
+      "task_type": "text_to_point",
+      "instruction": "WinkelwagenWinkelwagen (0)",
+      "gt_bbox": [
+        0.21666666666666667,
+        0.3435185185185185,
+        0.3260416666666667,
+        0.3787037037037037
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button you need to click is labeled \"Winkelwagen\" and has the text \"(0)\" next to it. The coordinates for this button are approximately",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.352394819259644
+    },
+    {
+      "sample_id": 191,
+      "task_type": "text_to_bbox",
+      "instruction": "QANUNVERICILIK",
+      "gt_bbox": [
+        0.24,
+        0.07,
+        0.32,
+        0.12
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"QANUNVERICILIK\" is located at the top navigation bar of the webpage. The coordinates for this button are approximately:\n\n-",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.635820627212524
+    },
+    {
+      "sample_id": 192,
+      "task_type": "text_to_point",
+      "instruction": "+375 (44) 557-55-77",
+      "gt_bbox": [
+        0.7921875,
+        0.5444444444444444,
+        0.8708333333333333,
+        0.562962962962963
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.0020833333333333333,
+        0.11435185185185186
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.10092592592592593,
+        0.003125,
+        0.12777777777777777
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [109, 6, 138, 14], \"label\": \"",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.50241255760193
+    },
+    {
+      "sample_id": 194,
+      "task_type": "text_to_point",
+      "instruction": "Home",
+      "gt_bbox": [
+        0.12604166666666666,
+        0.3685185185185185,
+        0.1609375,
+        0.41574074074074074
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To navigate back to the homepage, you should click on the button labeled \"\u041d\u0430\u0437\u0430\u0434\" (Back) located at the bottom right corner of the page.",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.355311393737793
+    },
+    {
+      "sample_id": 195,
+      "task_type": "text_to_bbox",
+      "instruction": "Previous Post",
+      "gt_bbox": [
+        0.21,
+        0.59,
+        0.27,
+        0.63
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for clicking the \"Previous Post\" button, I would need more specific information about the layout and structure of the webpage",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.228315830230713
+    },
+    {
+      "sample_id": 196,
+      "task_type": "text_to_point",
+      "instruction": "Aktivacija korisnika",
+      "gt_bbox": [
+        0.6395833333333333,
+        0.23333333333333334,
+        0.7177083333333333,
+        0.2601851851851852
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "The button labeled \"Aktivacija korisnika\" is located at the bottom right corner of the page. The coordinates for this button are approximately:\n\n- Top",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.28567934036255
+    },
+    {
+      "sample_id": 198,
+      "task_type": "text_to_bbox",
+      "instruction": "Impala Plastics",
+      "gt_bbox": [
+        0.25,
+        0.01,
+        0.47,
+        0.08
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.0046875,
+        0.2708333333333333
+      ],
+      "pred_bbox": [
+        0.0010416666666666667,
+        0.22685185185185186,
+        0.008333333333333333,
+        0.3148148148148148
+      ],
+      "raw_response": "```json\n[\n\t{\"bbox_2d\": [245, 16, 340, 37], \"label\":",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 17.25632929801941
+    },
+    {
+      "sample_id": 199,
+      "task_type": "text_to_point",
+      "instruction": "explore",
+      "gt_bbox": [
+        0.328125,
+        0.8935185185185185,
+        0.40260416666666665,
+        0.9305555555555556
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "To provide you with the coordinates and mark index for the button labeled \"explore,\" I would need to know the specific image or section where the button is located",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "elapsed_s": 16.80526852607727
     }
   ]
 }

@@ -231,3 +231,81 @@ Option B — Small demo first:
   open question going into the model phase
 - GPU resource request may be needed depending on mentor decision
 - conversations.jsonl is the primary artifact from Phase 1
+
+---
+
+### 2026-06-12
+
+## Goal
+Pivot from full Magma-8B reproduction to small VLM experiment.
+Build agent + eval harness, establish baseline, prepare for fine-tuning.
+
+---
+
+## Completed
+
+### Experiment Design Pivot
+Decided on focused experiment: Qwen2.5-VL-3B-Instruct + SoM agent,
+fine-tuned on conversations.jsonl, benchmarked against zero-shot baseline.
+Core claim mirrors Magma paper: SoM-formatted conversation training
+improves spatial grounding in VLMs.
+
+### Train/Val Split
+- Implemented src/clean/split.py
+- 90/10 split, seed=42
+- Train: 8,997 samples → data/processed/seeclick_web/train.jsonl
+- Val:   999 samples   → data/processed/seeclick_web/val.jsonl
+
+### UIAgent
+- Implemented src/agent/ui_agent.py (~500 lines)
+- Model-agnostic design: pluggable VLM backends + SoM sources
+- VLM backends: QwenBackend (4-bit NF4, 0–1 coords),
+  MagmaBackend (bfloat16, 0–1000 coords, trust_remote_code)
+- SoM sources: AnnotationSoM (sidecar-based, eval/train),
+  OmniParserSoM (YOLO+Florence2+OCR, production)
+- Three interaction modes matching Magma app.py:
+  empty → OmniParser only, Q: prefix → VQA, task → grounding
+- Coordinate scale difference handled per-backend (_COORD_SCALE)
+- OmniParser import optional (silent fallback if weights absent)
+
+### Model Download
+- Qwen2.5-VL-3B-Instruct downloaded via aria2c (16 parallel connections,
+  bypassed ISP throttle on large safetensor shards)
+- Stored at models/qwen2_5_vl_3b/ (in .gitignore)
+- OmniParser-v2.0 downloading in parallel to models/omniparser/
+
+### Eval Harness
+- Implemented src/eval/eval.py
+- Metric: click accuracy (predicted point falls inside GT bbox)
+- Secondary: IoU@0.5, mean IoU, per-task breakdown
+- Fixed degenerate GT bboxes: text_to_point GT is stored as a
+  center point (x1==x2, y1==y2) — resolved via sidecar bbox lookup
+  using gt_mark, with epsilon expansion fallback
+- Fixed coordinate scale: pixel-scale predictions (any value > 2.0)
+  auto-normalized by image dimensions
+- max_new_tokens=32 (correct format is ~20 tokens; 128 was wasteful)
+- CLI: --adapter, --max-samples, --name flags
+
+### Baseline Eval
+- Smoke test (10 samples): 0% click accuracy — expected
+- Model outputs pixel coords + wrong format (no fine-tuning yet)
+- GT bbox fix confirmed: non-degenerate bboxes in results
+- Full baseline eval running: 200 samples, ~50 min, nohup
+
+---
+
+## Current Status
+
+Pipeline:    COMPLETE
+Agent:       COMPLETE (Qwen2.5-VL-3B-Instruct, 4-bit, AnnotationSoM)
+Baseline:    RUNNING (200 samples, results/eval_baseline.json)
+Fine-tuning: NEXT (Colab T4, QLoRA via trl.SFTTrainer)
+
+---
+
+## Next
+- Write src/train/finetune.py (QLoRA, SFTTrainer, train.jsonl)
+- Run fine-tuning on Colab free T4 (~4–6 hrs, 3 epochs)
+- Download LoRA adapter (~100MB) to models/lora_adapter/
+- Re-run eval with --adapter → record finetuned score
+- Report delta: baseline% → finetuned% = result

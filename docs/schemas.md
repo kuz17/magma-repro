@@ -280,3 +280,56 @@ Current focus:
 - Statistical validation pass on conversations.jsonl
 - Clarify reproduction target with mentor (methodology vs results)
 - Run official Magma-8B demo to establish benchmark baseline
+
+---
+
+## Experiment Pipeline (Phase 2)
+
+### Design
+Focused ablation: does SoM-formatted conversation training improve
+spatial grounding in a small VLM?
+
+
+---
+
+## Experiment Pipeline (Phase 2)
+
+### Design
+Focused ablation: does SoM-formatted conversation training improve
+spatial grounding in a small VLM?
+
+```
+conversations.jsonl
+      ↓
+train/val split (90/10, seed=42)
+      ↓
+┌─────────────┐         ┌──────────────────────┐
+│ baseline    │         │ QLoRA fine-tune       │
+│ eval        │         │ (trl.SFTTrainer,      │
+│ (zero-shot) │         │  Colab T4, 3 epochs)  │
+└──────┬──────┘         └──────────┬───────────┘
+       │                           │ LoRA adapter
+       └────────── delta ──────────┘
+                click accuracy @ IoU 0.5
+```
+
+### Model
+- Qwen/Qwen2.5-VL-3B-Instruct
+- 4-bit NF4 quantization (bitsandbytes)
+- Local path: models/qwen2_5_vl_3b/
+- Coordinate output: normalized 0–1
+
+### Eval metric
+click accuracy = predicted point falls inside GT bbox
+
+GT bbox sourced from:
+1. text_to_bbox tasks: 4-coord bbox from assistant turn
+2. text_to_point tasks: center point → resolved to actual element
+   bbox via _marks.json sidecar lookup (gt_mark index)
+
+Pixel-scale predictions (any value > 2.0) auto-normalized by
+dividing by SoM image dimensions.
+
+### Results location
+results/eval_baseline.json   ← zero-shot
+results/eval_finetuned.json  ← after QLoRA
