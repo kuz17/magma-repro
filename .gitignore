@@ -21,6 +21,9 @@ Thumbs.db
 # vscode
 .vscode/
 
+#output
+outputs/
+
 # model artifacts
 *.pt
 *.pth

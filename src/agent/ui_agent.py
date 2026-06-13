@@ -60,18 +60,16 @@ from PIL import Image
 # ── optional OmniParser import ─────────────────────────────────────────────
 try:
     import sys, os
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "agents" / "ui_agent"))
+    sys.path.insert(0, "/data/Magma/OmniParser")
     from util.utils import (
         check_ocr_box,
         get_yolo_model,
         get_caption_model_processor,
         get_som_labeled_img,
     )
-    from util.som import MarkHelper, plot_boxes_with_marks
     _OMNIPARSER_AVAILABLE = True
 except ImportError:
     _OMNIPARSER_AVAILABLE = False
-
 # ── coordinate constants ────────────────────────────────────────────────────
 _MAGMA_COORD_SCALE = 1000.0   # Magma outputs 0–1000; divide to normalise
 _QWEN_COORD_SCALE  = 1.0      # Qwen outputs 0–1 directly
@@ -151,9 +149,9 @@ class OmniParserSoM(_SoMSource):
 
     def __init__(
         self,
-        yolo_path: str = "weights/icon_detect/model.pt",
+        yolo_path: str = "models/omniparser/icon_detect/model.pt",
         caption_model: str = "florence2",
-        caption_path: str = "weights/icon_caption",
+        caption_path: str = "models/omniparser/icon_caption",
         box_threshold: float = 0.05,
         iou_threshold: float = 0.10,
         use_paddleocr: bool = True,
@@ -162,14 +160,14 @@ class OmniParserSoM(_SoMSource):
         if not _OMNIPARSER_AVAILABLE:
             raise ImportError(
                 "OmniParser utilities not found. "
-                "Clone https://github.com/microsoft/Magma and ensure "
-                "agents/ui_agent/ is on the Python path."
+                "Clone https://github.com/microsoft/OmniParser to /data/Magma/OmniParser "
+                "and add it to sys.path."
             )
         self.box_threshold = box_threshold
         self.iou_threshold = iou_threshold
         self.use_paddleocr = use_paddleocr
         self.imgsz = imgsz
-        self._mark_helper = MarkHelper()
+        #self._mark_helper = MarkHelper()
 
         print("Loading OmniParser YOLO model...")
         self.yolo_model = get_yolo_model(model_path=yolo_path)
