@@ -45,16 +45,27 @@ LABEL_COLOR    = (255, 255, 255)
 FONT_SIZE      = 16
 
 # ── OmniParser detection config ────────────────────────────────────────
-YOLO_THRESHOLD = 0.30       # higher = fewer icon detections
-OCR_THRESHOLD  = 0.95       # higher = fewer text detections
-IOU_THRESHOLD  = 0.5        # higher = more overlap removal
+YOLO_THRESHOLD = 0.25
+OCR_THRESHOLD  = 0.92
+IOU_THRESHOLD  = 0.4
+MAX_ELEMENTS   = 35
 
 # ── prompt templates ───────────────────────────────────────────────────
+# Fine-tuned prompt: give element list, ask for mark number only
 PROMPT_TEMPLATE = (
+    'On this software\'s interface, to execute the step "{task}", '
+    "which mark should I click?\n\n"
+    "Detected elements:\n{elements}\n\n"
+    "Respond with ONLY: Mark: N"
+)
+
+# Baseline prompt: no element list, model guesses coordinate
+BASELINE_PROMPT_TEMPLATE = (
     'On this software\'s interface, to execute the step "{task}", '
     "where do I direct my attention? "
     "Please provide the coordinate and the bounding box's mark index if applicable."
 )
+
 RAW_PROMPT_TEMPLATE = (
     'In this UI screenshot I need to perform the action: "{task}". '
     "Respond with ONLY the format: Coordinate: (x, y) "
@@ -63,13 +74,27 @@ RAW_PROMPT_TEMPLATE = (
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Parsing
+# Helpers
 # ──────────────────────────────────────────────────────────────────────
 
+def _build_element_context(content_list: list) -> str:
+    """Build a text description of detected marks for the prompt."""
+    lines = []
+    for i, elem in enumerate(content_list):
+        content = elem.get('content') or 'unknown'
+        etype   = elem.get('type', 'element')
+        lines.append(f"Mark {i}: {content} ({etype})")
+    return "\n".join(lines)
+
+
 def _parse_point(response: str, image_size: tuple = (1, 1)) -> tuple | None:
+    """
+    Fallback coordinate parser when mark lookup fails.
+    Handles normalized and absolute pixel formats.
+    """
     w, h = image_size
 
-    # Format 1: Coordinate: (x, y) — fine-tuned output, normalized
+    # Format 1: Coordinate: (x, y)
     m = re.search(
         r'[Cc]oordinates?\s*[:\(]*\s*\(?([0-9.]+)\s*,\s*([0-9.]+)\)?',
         response,
@@ -80,14 +105,14 @@ def _parse_point(response: str, image_size: tuple = (1, 1)) -> tuple | None:
             return (max(0.0, min(1.0, x)), max(0.0, min(1.0, y)))
         return (max(0.0, min(1.0, x / w)), max(0.0, min(1.0, y / h)))
 
-    # Format 2: **X-coordinate:** 1830 — base model verbose
+    # Format 2: X-coordinate: 1830 / Y-coordinate: 24
     mx = re.search(r'[Xx]-[Cc]oordinate[^0-9]*([0-9]+)', response, re.IGNORECASE)
     my = re.search(r'[Yy]-[Cc]oordinate[^0-9]*([0-9]+)', response, re.IGNORECASE)
     if mx and my:
         x, y = float(mx.group(1)), float(my.group(1))
         return (max(0.0, min(1.0, x / w)), max(0.0, min(1.0, y / h)))
 
-    # Format 3: bare (x, y) pair anywhere in response
+    # Format 3: bare (x, y) pair
     m = re.search(r'\(([0-9.]+)\s*,\s*([0-9.]+)\)', response)
     if m:
         x, y = float(m.group(1)), float(m.group(2))
@@ -96,6 +121,12 @@ def _parse_point(response: str, image_size: tuple = (1, 1)) -> tuple | None:
         return (max(0.0, min(1.0, x / w)), max(0.0, min(1.0, y / h)))
 
     return None
+
+
+def _extract_mark(response: str) -> int | None:
+    """Extract mark number from model response."""
+    m = re.search(r'[Mm]ark\s*:?\s*(\d+)', response)
+    return int(m.group(1)) if m else None
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -114,7 +145,7 @@ class DemoRunner:
     ):
         self.raw_mode       = raw_mode
         self.tag            = tag
-        self.training_style = training_style
+        self.training_style = training_style  # True = fine-tuned mode
         self._input_saved   = False
         self._load_qwen(lora_path)
         if not raw_mode:
@@ -204,9 +235,15 @@ class DemoRunner:
             imgsz=640,
         )
 
+        # cap to MAX_ELEMENTS — model trained on 5-30 marks per image
+        if len(label_coords) > MAX_ELEMENTS:
+            keys = list(label_coords.keys())[:MAX_ELEMENTS]
+            label_coords   = {k: label_coords[k] for k in keys}
+            content_list   = content_list[:MAX_ELEMENTS]
+            print(f"  Capped to {MAX_ELEMENTS} elements", flush=True)
+
         if self.training_style:
-            # re-render in training circle style
-            # label_coords: {str: [x, y, w, h]} pixel top-left xywh
+            # render in training circle style (red circles, same as training data)
             elements = [
                 {"bbox": [x/iw, y/ih, (x+bw)/iw, (y+bh)/ih]}
                 for (x, y, bw, bh) in label_coords.values()
@@ -251,26 +288,56 @@ class DemoRunner:
 
         if self.raw_mode:
             prompt = RAW_PROMPT_TEMPLATE.format(task=task)
-            inference_image = image
-        else:
-            print("  Running OmniParser...", flush=True)
-            som_image, label_coords, _ = self._run_omniparser(image)
-            print(f"  Total elements : {len(label_coords)}", flush=True)
-            prompt = PROMPT_TEMPLATE.format(task=task)
-            inference_image = som_image
+            response = self._run_qwen(image, prompt)
+            point = _parse_point(response, image_size=(w, h))
+            return response, point
 
-            # save the exact image Qwen sees — only on first task
-            if not self._input_saved:
-                p = Path(image_path)
-                tag = f"_{self.tag}" if self.tag else ""
-                save_path = p.parent / f"vlm_input{tag}_{p.stem}.png"
-                inference_image.save(save_path)
-                print(f"  VLM input saved: {save_path}")
-                self._input_saved = True
+        print("  Running OmniParser...", flush=True)
+        som_image, label_coords, content_list = self._run_omniparser(image)
+        print(f"  Total elements : {len(label_coords)}", flush=True)
+
+        # build mark → center lookup from OmniParser pixel coords
+        # label_coords: {str: [x, y, w, h]} top-left pixel xywh
+        mark_to_center = {
+            int(k): ((x + bw/2) / w, (y + bh/2) / h)
+            for k, (x, y, bw, bh) in label_coords.items()
+        }
+
+        if self.training_style:
+            # fine-tuned mode: give element list, ask for mark number
+            element_context = _build_element_context(content_list)
+            prompt = PROMPT_TEMPLATE.format(task=task, elements=element_context)
+        else:
+            # baseline mode: no element list, model guesses coordinate
+            prompt = BASELINE_PROMPT_TEMPLATE.format(task=task)
+
+        inference_image = som_image
+
+        # save the exact image Qwen sees — only on first task
+        if not self._input_saved:
+            p = Path(image_path)
+            tag = f"_{self.tag}" if self.tag else ""
+            save_path = p.parent / f"vlm_input{tag}_{p.stem}.png"
+            inference_image.save(save_path)
+            print(f"  VLM input saved: {save_path}")
+            self._input_saved = True
 
         print("  Running Qwen...", flush=True)
         response = self._run_qwen(inference_image, prompt)
-        point = _parse_point(response, image_size=(w, h))
+
+        # resolve point: mark lookup first, coordinate parse as fallback
+        point = None
+        mark_id = _extract_mark(response)
+        if mark_id is not None:
+            point = mark_to_center.get(mark_id)
+            if point:
+                print(f"  Mark {mark_id} → center {point}")
+            else:
+                print(f"  Mark {mark_id} not in label_coords, falling back to coord parse")
+                point = _parse_point(response, image_size=(w, h))
+        else:
+            point = _parse_point(response, image_size=(w, h))
+
         return response, point
 
 
@@ -387,7 +454,7 @@ def main():
     parser.add_argument("--raw",            action="store_true",
                         help="Skip OmniParser, run Qwen on raw image")
     parser.add_argument("--training-style", action="store_true",
-                        help="Render SoM as training circles instead of OmniParser boxes")
+                        help="Fine-tuned mode: element list prompt + mark lookup")
     parser.add_argument("--interactive",    action="store_true",
                         help="Interactive loop")
     args = parser.parse_args()
