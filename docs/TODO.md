@@ -96,16 +96,56 @@
 - [x] Implement QwenBackend
 - [x] Implement MagmaBackend
 - [x] Implement AnnotationSoM
-- [ ] Finish OmniParser installation
+- [x] Install OmniParser-v2.0 weights (models/omniparser/)
 - [x] Implement OmniParserSoM integration
 - [x] Implement three prompting modes
 - [x] Implement coordinate parser
 - [x] Handle backend-specific coordinate scaling
 - [x] Download Qwen2.5-VL-3B-Instruct
-- [ ] Download OmniParser-v2.0 weights
+
+### Demo Pipeline
+- [x] Implement src/agent/click_visualizer.py
+- [x] Baseline mode (raw screenshot, coordinate-guessing prompt)
+- [x] Fine-tuned mode (training-style red circles, mark-lookup)
+- [x] Click-point rendering with annotated output images
+- [x] Implement src/agent/interactive.py (text-only REPL)
+- [x] Validate fine-tuned pipeline on real screenshots (Amazon nav bar)
+- [x] Fix prompt mismatch (PROMPT_TEMPLATE now matches text_to_point training format exactly)
+- [x] Fix mark→center mapping (built from apply_som placed output, not label_coords)
+- [x] Fix content_list persistence (self._last_content_list set in _run_omniparser)
+- [x] Fix VLM input always saved to /tmp/vlm_input_{tag}.png
+- [x] Tune YOLO_THRESHOLD 0.25→0.10, OCR_THRESHOLD 0.92→0.75
+
+### Inference Server
+- [x] Implement src/agent/inference_server.py (FastAPI, POST /act, GET /health)
+- [x] Baseline and finetuned startup modes
+- [x] Fix _patch_demo_runner (was reading non-existent attributes; now no-op)
+- [x] Add DomElementInfo schema and dom_elements field to ActRequest
+
+### Web Agent
+- [x] Implement src/agent/web_agent.py (Playwright REPL)
+- [x] go / type / enter / scroll / back / screenshot / url commands
+- [x] Fix: go to <url> navigation crash (strip "to " prefix)
+- [x] Fix: navigation exception crashes agent (now caught and printed)
+- [x] Raise inference timeout 120→240s
+- [x] Fix: go back navigated to "https://back/" (now calls browser.back())
+- [x] Fix: back() crash on slow pages (networkidle timeout caught, 10→15s)
+- [x] Add: search <query> compound command (DOM-direct, no VLM inference)
+      click input → Ctrl+A → type → Escape → click submit button
+- [ ] Add: reload command (refresh current page)
+- [ ] Add: elements command (list DOM interactive elements, no inference)
+- [ ] Add: inspect command (open /tmp/vlm_input_finetuned.png with xdg-open)
+- [ ] Add: fill <label> <value> command (DOM-direct fill by label/placeholder)
+- [ ] Add: marks command (run OmniParser only, open SoM image, no Qwen)
+
+### DOM Injection
+- [x] Add BrowserEnv.get_interactive_elements() (JS DOM query)
+- [x] Pass dom_elements through InferenceClient → inference server → DemoRunner
+- [x] Implement _rebuild_som_dom_priority(): DOM elements at marks 0,1,… then OmniParser
+- [x] Cap rebuilt SoM at 15 marks total
 
 ### Evaluation
-- [x] Implement src/eval/eval.py
+- [x] Implement src/eval/eval.py (two modes: baseline / finetuned)
 - [x] Click accuracy metric
 - [x] IoU@0.5 metric
 - [x] Mean IoU metric
@@ -113,30 +153,37 @@
 - [x] Degenerate GT bbox fix
 - [x] Prediction normalization
 - [x] Smoke test (10 samples)
-- [ ] Run 200-sample baseline evaluation
-- [ ] Save results/eval_baseline.json
+- [x] Run baseline evaluation (500 samples → 402 evaluated)
+- [x] Save results/eval_baseline.json  ← 1.7% click accuracy
+- [ ] Run finetuned evaluation
+      python -m src.eval.eval --mode finetuned \
+        --adapter models/lora_adapter --name finetuned
+- [ ] Save results/eval_finetuned.json
+- [ ] Compute baseline → finetuned delta
+- [ ] Generate comparison table (baseline / finetuned / Magma-8B)
+- [ ] Investigate Mark:0 bias: run baseline mode on same pages and compare mark selection
 - [ ] Analyze failure cases
-- [ ] Generate qualitative examples
+- [ ] Generate qualitative examples (side-by-side baseline vs finetuned)
 
 ### Fine-tuning
-- [ ] Implement src/train/finetune.py
-- [ ] Convert conversations.jsonl → Qwen SFT format
-- [ ] Configure QLoRA
-- [ ] Configure TRL SFTTrainer
-- [ ] Run Colab T4 training
-- [ ] Export LoRA adapter
-- [ ] Save adapter to models/lora_adapter/
-- [ ] Evaluate fine-tuned model
+- [x] Implement src/train/finetune.py
+- [x] SoMDataset: load train.jsonl + renders, first grounding turn only
+- [x] SoMCollator: chat format, loss masked on user/image tokens
+- [x] Configure QLoRA (r=16, alpha=32, all linear projections)
+- [x] Configure TRL SFTTrainer
+- [x] Run Kaggle T4 training (3 epochs, ~8.9k samples)
+- [x] Export LoRA adapter (adapter_model.safetensors, 148.7MB)
+- [x] Save adapter to models/lora_adapter/
+- [ ] Evaluate fine-tuned model (see Evaluation above)
 - [ ] Save results/eval_finetuned.json
 - [ ] Compute baseline → finetuned delta
 - [ ] Generate comparison table
 
 ### Magma Reference
-- [ ] Clone official Magma repository
-- [ ] Download Magma-8B weights
-- [ ] Run official UI-grounding demo
+- [ ] Download Magma-8B in 4-bit on Kaggle
+- [ ] Run eval.py with MagmaBackend on val.jsonl
 - [ ] Record reference performance
-- [ ] Compare with Qwen baseline
+- [ ] Compare with Qwen baseline and finetuned
 
 ### Reproduction Target
 - [ ] Clarify with mentor:
@@ -174,12 +221,9 @@
 - [ ] Docker containerization
 
 ## Immediate Next Steps
-1. Finish OmniParser installation.
-2. Complete 200-sample baseline evaluation.
-3. Inspect baseline failures manually.
-4. Implement finetune.py.
-5. Run QLoRA training on Colab.
-6. Evaluate LoRA adapter.
-7. Compare baseline vs finetuned performance.
-8. Obtain Magma reference numbers.
-9. Write thesis experiment section.
+1. Run finetuned eval on local machine or Kaggle.
+2. Compute and record baseline → finetuned delta.
+3. Download Magma-8B in 4-bit (Kaggle) and run reference eval.
+4. Generate comparison table: baseline / finetuned / Magma-8B.
+5. Analyze fine-tuned failure cases.
+6. Write thesis experiment section draft.

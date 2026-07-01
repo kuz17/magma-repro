@@ -45,18 +45,16 @@ LABEL_COLOR    = (255, 255, 255)
 FONT_SIZE      = 16
 
 # ── OmniParser detection config ────────────────────────────────────────
-YOLO_THRESHOLD = 0.25
-OCR_THRESHOLD  = 0.92
+YOLO_THRESHOLD = 0.10   # lowered from 0.25; 0.05 caused Florence-2 to caption 100+ elements on CPU
+OCR_THRESHOLD  = 0.75   # lowered from 0.92; 0.50 produced garbage OCR on anti-aliased text
 IOU_THRESHOLD  = 0.4
 MAX_ELEMENTS   = 35
 
 # ── prompt templates ───────────────────────────────────────────────────
-# Fine-tuned prompt: give element list, ask for mark number only
+# Fine-tuned prompt: exact text_to_point format used during training
 PROMPT_TEMPLATE = (
-    'On this software\'s interface, to execute the step "{task}", '
-    "which mark should I click?\n\n"
-    "Detected elements:\n{elements}\n\n"
-    "Respond with ONLY: Mark: N"
+    'To execute the step "{task}", where do I direct my attention? '
+    "Please provide the coordinate and the bounding box's mark index."
 )
 
 # Baseline prompt: no element list, model guesses coordinate
@@ -76,16 +74,6 @@ RAW_PROMPT_TEMPLATE = (
 # ──────────────────────────────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────────────────────────────
-
-def _build_element_context(content_list: list) -> str:
-    """Build a text description of detected marks for the prompt."""
-    lines = []
-    for i, elem in enumerate(content_list):
-        content = elem.get('content') or 'unknown'
-        etype   = elem.get('type', 'element')
-        lines.append(f"Mark {i}: {content} ({etype})")
-    return "\n".join(lines)
-
 
 def _parse_point(response: str, image_size: tuple = (1, 1)) -> tuple | None:
     """
@@ -123,6 +111,35 @@ def _parse_point(response: str, image_size: tuple = (1, 1)) -> tuple | None:
     return None
 
 
+def _draw_som_mark(image: Image.Image, bbox_norm: list, mark_id: int, radius: int = 9) -> None:
+    """Draw a single mark (red circle + label) on image — same style as apply_som."""
+    w, h = image.size
+    cx = int((bbox_norm[0] + bbox_norm[2]) / 2 * w)
+    cy = int((bbox_norm[1] + bbox_norm[3]) / 2 * h)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius],
+                 fill="red", outline="white", width=1)
+    try:
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
+    except Exception:
+        font = ImageFont.load_default()
+    label = str(mark_id)
+    tb = draw.textbbox((0, 0), label, font=font)
+    tw, th = tb[2] - tb[0], tb[3] - tb[1]
+    draw.text((cx - tw / 2, cy - th / 2 - 1), label, fill="white", font=font)
+
+
+def _inject_dom_mark(image: Image.Image, bbox_norm: list, mark_id: int) -> None:
+    """Draw a DOM-injected element mark: blue outline around the bbox + red circle."""
+    w, h = image.size
+    x1, y1 = int(bbox_norm[0] * w), int(bbox_norm[1] * h)
+    x2, y2 = int(bbox_norm[2] * w), int(bbox_norm[3] * h)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([x1, y1, x2, y2], outline=(0, 120, 255), width=2)
+    _draw_som_mark(image, bbox_norm, mark_id)
+
+
 def _extract_mark(response: str) -> int | None:
     """Extract mark number from model response."""
     m = re.search(r'[Mm]ark\s*:?\s*(\d+)', response)
@@ -143,17 +160,17 @@ class DemoRunner:
         tag: str = "",
         training_style: bool = False,
     ):
-        self.raw_mode       = raw_mode
-        self.tag            = tag
-        self.training_style = training_style  # True = fine-tuned mode
-        self._input_saved   = False
+        self.raw_mode           = raw_mode
+        self.tag                = tag
+        self.training_style     = training_style  # True = fine-tuned mode
+        self._last_content_list = []
         self._load_qwen(lora_path)
         if not raw_mode:
             self._load_omniparser()
 
     def _load_omniparser(self):
         sys.path.insert(0, OMNIPARSER_CODE)
-        from util.utils import (
+        from util.utils import (  # type: ignore[import-not-found]
             check_ocr_box,
             get_caption_model_processor,
             get_som_labeled_img,
@@ -242,19 +259,103 @@ class DemoRunner:
             content_list   = content_list[:MAX_ELEMENTS]
             print(f"  Capped to {MAX_ELEMENTS} elements", flush=True)
 
+        self._last_content_list = content_list
+        self._raw_label_coords  = label_coords   # saved for DOM-priority re-render
+
         if self.training_style:
-            # render in training circle style (red circles, same as training data)
-            elements = [
+            # Render in training circle style (red circles, same as training data).
+            # apply_som re-sorts elements by area and assigns NEW sequential mark IDs,
+            # so we must build mark_to_center from its `placed` output — not label_coords.
+            elements_for_som = [
                 {"bbox": [x/iw, y/ih, (x+bw)/iw, (y+bh)/ih]}
                 for (x, y, bw, bh) in label_coords.values()
             ]
             from src.som.render_som import apply_som
-            som_image, _ = apply_som(image.copy(), elements)
+            som_image, placed = apply_som(image.copy(), elements_for_som)
+            mark_to_center = {
+                mark_id: (
+                    (el["bbox"][0] + el["bbox"][2]) / 2,
+                    (el["bbox"][1] + el["bbox"][3]) / 2,
+                )
+                for mark_id, el in placed
+            }
         else:
             som_image = Image.open(io.BytesIO(base64.b64decode(encoded)))
+            mark_to_center = {
+                int(k): ((x + bw/2) / iw, (y + bh/2) / ih)
+                for k, (x, y, bw, bh) in label_coords.items()
+            }
 
         print(f"  Original : {image.size}  |  SoM : {som_image.size}")
-        return som_image, label_coords, content_list
+        return som_image, mark_to_center, content_list
+
+    def _rebuild_som_dom_priority(
+        self,
+        original_image: Image.Image,
+        omni_content_list: list,
+        dom_elements: list,
+        max_marks: int = 15,
+    ) -> tuple[Image.Image, dict, list]:
+        """
+        Re-render the SoM from scratch with DOM elements occupying the LOWEST
+        mark IDs (0, 1, ...), then OmniParser elements fill the rest.
+        Capped at max_marks to avoid overwhelming the model.
+
+        This converts the model's Mark:0 bias into an asset: the search bar
+        (or most relevant input) becomes Mark 0, so "Mark: 0" responses are
+        now correct for search/input tasks.
+
+        DOM priority: text inputs → buttons → other interactive elements.
+        """
+        iw, ih = original_image.size
+
+        def _dom_order(e):
+            tag = e.get("tag", "")
+            typ = e.get("type", "")
+            if tag in ("input", "textarea") and typ not in ("submit", "button", "checkbox", "radio", "image"):
+                return 0  # text inputs first
+            if tag == "button" or typ in ("submit", "button"):
+                return 1  # submit buttons second
+            return 2
+
+        valid_dom = [e for e in dom_elements if len(e.get("bbox_norm", [])) == 4]
+        sorted_dom = sorted(valid_dom, key=_dom_order)
+
+        img          = original_image.copy()
+        mark_to_center = {}
+        content_list   = []
+        mark_id        = 0
+        draw           = ImageDraw.Draw(img)
+
+        # 1. DOM elements — draw blue outline + red circle mark
+        for elem in sorted_dom:
+            if mark_id >= max_marks:
+                break
+            bbox = elem["bbox_norm"]
+            x1, y1 = int(bbox[0] * iw), int(bbox[1] * ih)
+            x2, y2 = int(bbox[2] * iw), int(bbox[3] * ih)
+            draw.rectangle([x1, y1, x2, y2], outline=(0, 120, 255), width=2)
+            _draw_som_mark(img, bbox, mark_id)
+            mark_to_center[mark_id] = ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
+            content_list.append({
+                "content": elem.get("label", elem.get("tag", "input")),
+                "type":    elem.get("tag", "input"),
+                "bbox":    bbox,
+            })
+            mark_id += 1
+
+        # 2. OmniParser elements after
+        raw = getattr(self, "_raw_label_coords", {})
+        for ((x, y, bw, bh), omni_item) in zip(raw.values(), omni_content_list):
+            if mark_id >= max_marks:
+                break
+            bbox = [x / iw, y / ih, (x + bw) / iw, (y + bh) / ih]
+            _draw_som_mark(img, bbox, mark_id)
+            mark_to_center[mark_id] = ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
+            content_list.append(omni_item)
+            mark_id += 1
+
+        return img, mark_to_center, content_list
 
     def _run_qwen(self, image: Image.Image, prompt: str) -> str:
         import torch
@@ -278,11 +379,11 @@ class DemoRunner:
         ).to(self._qwen.device)
 
         with torch.no_grad():
-            out = self._qwen.generate(**inputs, max_new_tokens=32)
+            out = self._qwen.generate(**inputs, max_new_tokens=20)
         trimmed = out[0][inputs["input_ids"].shape[1]:]
         return self._processor.decode(trimmed, skip_special_tokens=True).strip()
 
-    def act(self, image_path: str, task: str) -> tuple[str, tuple | None]:
+    def act(self, image_path: str, task: str, dom_elements: list | None = None) -> tuple[str, tuple | None]:
         image = Image.open(image_path).convert("RGB")
         w, h = image.size
 
@@ -293,34 +394,49 @@ class DemoRunner:
             return response, point
 
         print("  Running OmniParser...", flush=True)
-        som_image, label_coords, content_list = self._run_omniparser(image)
-        print(f"  Total elements : {len(label_coords)}", flush=True)
-
-        # build mark → center lookup from OmniParser pixel coords
-        # label_coords: {str: [x, y, w, h]} top-left pixel xywh
-        mark_to_center = {
-            int(k): ((x + bw/2) / w, (y + bh/2) / h)
-            for k, (x, y, bw, bh) in label_coords.items()
-        }
+        som_image, mark_to_center, content_list = self._run_omniparser(image)
+        print(f"  Total elements : {len(mark_to_center)}", flush=True)
 
         if self.training_style:
-            # fine-tuned mode: give element list, ask for mark number
-            element_context = _build_element_context(content_list)
-            prompt = PROMPT_TEMPLATE.format(task=task, elements=element_context)
+            # fine-tuned mode: exact text_to_point prompt used during training
+            prompt = PROMPT_TEMPLATE.format(task=task)
         else:
             # baseline mode: no element list, model guesses coordinate
             prompt = BASELINE_PROMPT_TEMPLATE.format(task=task)
 
-        inference_image = som_image
+        if dom_elements and self.training_style:
+            # Re-render the entire SoM with DOM elements at mark IDs 0, 1, ...
+            # so the model's Mark:0 bias maps to the most relevant input element.
+            inference_image, mark_to_center, content_list = \
+                self._rebuild_som_dom_priority(image, content_list, dom_elements, max_marks=15)
+            self._last_content_list = content_list
+            print(f"  SoM rebuilt: {len(mark_to_center)} marks (DOM-first)", flush=True)
+        else:
+            inference_image = som_image
+            if dom_elements:
+                # baseline mode — just append DOM marks visually at the end
+                next_id = max(mark_to_center.keys(), default=-1) + 1
+                for elem in dom_elements:
+                    bbox = elem.get("bbox_norm", [])
+                    if len(bbox) != 4:
+                        continue
+                    mark_to_center[next_id] = (
+                        (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
+                    )
+                    content_list.append({
+                        "content": elem.get("label", elem.get("tag", "input")),
+                        "type":    elem.get("tag", "input"),
+                        "bbox":    bbox,
+                    })
+                    _inject_dom_mark(inference_image, bbox, next_id)
+                    next_id += 1
+                self._last_content_list = content_list
 
-        # save the exact image Qwen sees — only on first task
-        if not self._input_saved:
-            p = Path(image_path)
-            tag = f"_{self.tag}" if self.tag else ""
-            save_path = p.parent / f"vlm_input{tag}_{p.stem}.png"
-            inference_image.save(save_path)
-            print(f"  VLM input saved: {save_path}")
-            self._input_saved = True
+        # always save the exact image Qwen sees to /tmp for debugging
+        tag = self.tag or "debug"
+        save_path = Path(f"/tmp/vlm_input_{tag}.png")
+        inference_image.save(save_path)
+        print(f"  VLM input saved: {save_path}")
 
         print("  Running Qwen...", flush=True)
         response = self._run_qwen(inference_image, prompt)

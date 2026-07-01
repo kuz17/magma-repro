@@ -91,9 +91,7 @@ Both are valid grounding targets and are kept during rendering.
 - **No HTML tag information.** Schema is `instruction` / `bbox` /
   `data_type` only. Tag-based actionability scoring (button / a /
   input) is not applicable to this dataset — those fields do not
-  exist. Saliency scoring would be relevant for downstream evaluation
-  on raw proposals (e.g. OmniParser on ScreenSpot), not for SeeClick
-  pretraining renders.
+  exist.
 
 ## Internal utilities
 
@@ -183,7 +181,7 @@ Parameters (settled):
 - MIN_SPACING = 1.3 (multiplier on marker diameter)
 
 Status:
-Implemented, validated on 10-sample batch, and scaled to full 10k.
+Implemented, validated on 10-sample batch, scaled to full 10k.
 
 ## Paper-style SoM pipeline
 image + elements
@@ -196,7 +194,7 @@ greedy non-overlap placement, capped at MAX_MARKS
     ↓
 draw numbered markers at bbox centers
     ↓
-save SoM image
+save SoM image + _marks.json sidecar
 
 ## Formatting pipeline
 
@@ -248,9 +246,7 @@ Format validated against paper Figure 12.
 - Considered semantic/saliency scoring to favor buttons/inputs over
   large containers. Rejected for this dataset: it has no tag metadata
   to score on, and area-descending sort + MAX_MARKS already produces
-  paper-quality renders. Saliency scoring belongs in the
-  ScreenSpot/OmniParser evaluation pipeline where raw proposals lack
-  curation.
+  paper-quality renders.
 - Considered dynamic / percentile-based `MIN_AREA`. Rejected in favor
   of static floor + MAX_MARKS, which is simpler and behaves correctly
   on both sparse and dense pages.
@@ -275,20 +271,22 @@ Completed:
 - Magma-style conversation formatting (all four grounding tasks +
   input field subtasks)
 - conversations.jsonl written and validated against Figure 12
+- train/val split (90/10, seed=42)
+- UIAgent implementation (ui_agent.py)
+- Eval harness (eval.py) — two modes: baseline and finetuned
+- Baseline eval: 402/500 samples, click accuracy 1.7%
+  (results/eval_baseline.json)
+- finetune.py: QLoRA training script for Kaggle T4
+- LoRA adapter trained (Kaggle T4, 3 epochs, ~8.9k samples)
+  → models/lora_adapter/adapter_model.safetensors (148.7MB)
+- OmniParser-v2.0 installed (models/omniparser/)
+- click_visualizer.py demo pipeline: OmniParser + Qwen, baseline and
+  finetuned modes, click-point rendering, confirmed accurate on real
+  screenshots
 
 Current focus:
-- Statistical validation pass on conversations.jsonl
-- Clarify reproduction target with mentor (methodology vs results)
-- Run official Magma-8B demo to establish benchmark baseline
-
----
-
-## Experiment Pipeline (Phase 2)
-
-### Design
-Focused ablation: does SoM-formatted conversation training improve
-spatial grounding in a small VLM?
-
+- Run finetuned eval (eval.py --mode finetuned) to get delta
+- Obtain Magma-8B reference numbers
 
 ---
 
@@ -303,14 +301,14 @@ conversations.jsonl
       ↓
 train/val split (90/10, seed=42)
       ↓
-┌─────────────┐         ┌──────────────────────┐
-│ baseline    │         │ QLoRA fine-tune       │
-│ eval        │         │ (trl.SFTTrainer,      │
-│ (zero-shot) │         │  Colab T4, 3 epochs)  │
-└──────┬──────┘         └──────────┬───────────┘
-       │                           │ LoRA adapter
-       └────────── delta ──────────┘
-                click accuracy @ IoU 0.5
+┌─────────────────────┐    ┌──────────────────────┐
+│ baseline eval       │    │ QLoRA fine-tune       │
+│ (raw screenshot,    │    │ (trl.SFTTrainer,      │
+│  no SoM, no adapter)│    │  Kaggle T4, 3 epochs) │
+└──────────┬──────────┘    └──────────┬────────────┘
+           │                          │ LoRA adapter (148.7MB)
+           └──────────── delta ───────┘
+                  click accuracy @ IoU 0.5
 ```
 
 ### Model
@@ -318,6 +316,17 @@ train/val split (90/10, seed=42)
 - 4-bit NF4 quantization (bitsandbytes)
 - Local path: models/qwen2_5_vl_3b/
 - Coordinate output: normalized 0–1
+
+### Eval modes
+TWO modes — same metric (click accuracy), different inputs:
+
+  baseline   Raw screenshot + native Qwen prompt (no SoM, no adapter)
+             Tests: how good is the base model at UI grounding?
+
+  finetuned  SoM image + SoM prompt + LoRA adapter
+             Tests: does SoM fine-tuning improve grounding?
+
+  Delta = finetuned − baseline = what SoM training actually adds.
 
 ### Eval metric
 click accuracy = predicted point falls inside GT bbox
@@ -330,6 +339,207 @@ GT bbox sourced from:
 Pixel-scale predictions (any value > 2.0) auto-normalized by
 dividing by SoM image dimensions.
 
+### Results
+
+| Mode       | Samples evaluated | Click accuracy | IoU@0.5 | Mean IoU |
+|------------|-------------------|----------------|---------|----------|
+| baseline   | 402 / 500         | 1.7%           | 0.0%    | 0.005    |
+| finetuned  | —                 | TBD            | TBD     | TBD      |
+| Magma-8B   | —                 | TBD            | TBD     | TBD      |
+
 ### Results location
-results/eval_baseline.json   ← zero-shot
-results/eval_finetuned.json  ← after QLoRA
+results/eval_baseline.json   ← complete
+results/eval_finetuned.json  ← pending
+results/eval_magma.json      ← pending
+
+## Demo pipeline architecture
+
+### click_visualizer.py
+Full OmniParser → Qwen pipeline for live interaction.
+
+Components:
+- OmniParser: YOLO (icon_detect) + Florence-2 (icon_caption) + EasyOCR
+  Detection thresholds: YOLO=0.10, OCR=0.75, IOU=0.4, MAX_ELEMENTS=35
+  (YOLO lowered from 0.25 to catch more UI elements; OCR lowered from
+  0.92 to surface placeholder text without producing noise)
+- Qwen2.5-VL-3B-Instruct: 4-bit NF4, loaded from models/qwen2_5_vl_3b/
+- Optional LoRA adapter: PeftModel wraps base model
+
+Two modes:
+  baseline (--tag baseline):
+    OmniParser renders bbox-style SoM → Qwen receives screenshot
+    + BASELINE_PROMPT_TEMPLATE → parser extracts "Coordinate: (x,y)"
+
+  finetuned (--lora models/lora_adapter --training-style --tag finetuned):
+    OmniParser detections re-rendered as training-style red circles
+    → Qwen prompted with exact text_to_point training format
+    → model responds "Coordinate: (cx, cy). Mark: N."
+    → pipeline looks up Mark N's center from mark_to_center dict
+
+Prompt templates:
+  PROMPT_TEMPLATE (finetuned):
+    'To execute the step "{task}", where do I direct my attention?
+     Please provide the coordinate and the bounding box\'s mark index.'
+  
+  BASELINE_PROMPT_TEMPLATE:
+    'On this software\'s interface, to execute the step "{task}",
+     where do I direct my attention? Please provide the coordinate
+     and the bounding box\'s mark index if applicable.'
+
+Key design principle: mark-lookup, not coordinate prediction.
+The model selects a mark by ID; the pipeline resolves the exact
+pixel center from mark_to_center. Falls back to coordinate parsing
+if mark lookup fails.
+
+VLM input debug image: always saved to /tmp/vlm_input_{tag}.png
+after each inference. Inspect this to see what marks OmniParser
+placed before Qwen runs.
+
+Usage:
+  # fine-tuned
+  python -m src.agent.click_visualizer \
+    --image outputs/demo/screenshot.png \
+    --interactive --lora models/lora_adapter \
+    --tag finetuned --training-style
+
+  # baseline
+  python -m src.agent.click_visualizer \
+    --image outputs/demo/screenshot.png \
+    --interactive --tag baseline
+
+---
+
+### inference_server.py
+FastAPI server wrapping DemoRunner. Runs as a separate process.
+
+Start:
+  python -m src.agent.inference_server \
+    --mode finetuned --lora models/lora_adapter --port 8787
+
+  python -m src.agent.inference_server --mode baseline --port 8787
+
+Endpoints:
+  GET  /health
+  POST /act
+
+#### POST /act request schema
+```json
+{
+  "image_b64": "<base64-encoded PNG>",
+  "task": "click the search bar",
+  "dom_elements": [
+    {
+      "tag": "input",
+      "type": "text",
+      "label": "Search Amazon.in",
+      "bbox_norm": [0.29, 0.02, 0.63, 0.07]
+    }
+  ]
+}
+```
+
+dom_elements is optional (defaults to []). Populated by the web agent
+from Playwright's live DOM before each inference call.
+
+#### POST /act response schema
+```json
+{
+  "click_norm": [0.46, 0.04],
+  "mark_id": 0,
+  "raw_response": "Coordinate: (0.46, 0.04). Mark: 0.",
+  "elements": [
+    {"id": 0, "content": "Search Amazon.in", "type": "input", "bbox": [...]},
+    ...
+  ],
+  "error": null
+}
+```
+
+click_norm: normalised [x, y] in [0,1], or null if no click resolved.
+elements: list in content_list order (OmniParser order, NOT mark ID order).
+
+---
+
+### web_agent.py
+Interactive Playwright agent wired to inference_server via HTTP.
+
+Start:
+  # inference server must already be running
+  python -m src.agent.web_agent --url https://www.amazon.in
+
+Per-step loop:
+  1. Playwright screenshot (wait_stable)
+  2. BrowserEnv.get_interactive_elements() → DOM element list
+  3. POST /act with PNG + task + dom_elements
+  4. Receive click_norm
+  5. Playwright click at (x_norm * vp_w, y_norm * vp_h)
+
+REPL commands:
+  <task>             grounding task → screenshot → OmniParser → Qwen → click
+  search <query>     DOM-direct: find text input, clear, type, submit (no VLM)
+  go <url>           navigate (also accepts "go to <url>")
+  back / go back     browser back (networkidle timeout silenced)
+  type <text>        type at current focus
+  enter              press Enter + wait for load
+  scroll [up]        scroll 400px down (default) or up
+  screenshot         save to outputs/browser/
+  url                print current URL
+  quit / exit        close browser and exit
+
+search <query> command detail:
+  1. get_interactive_elements() → first visible text input
+  2. click(cx, cy)              → focus input
+  3. press_key("Control+a")    → select-all to clear existing text
+  4. type_text(query)
+  5. press_key("Escape")       → dismiss autocomplete (prevents Enter interception)
+  6. click submit button if found in DOM; else press_key("Enter")
+  7. wait_for_load(10s)        → silenced on timeout (slow pages acceptable)
+
+  Why DOM-direct: OmniParser + Qwen takes 90s for a task whose answer is
+  already known from the DOM. VLM reserved for ambiguous element selection.
+
+Known bugs fixed (2026-06-29):
+  - "go back" now calls browser.back() instead of navigating to "https://back/"
+  - back() no longer crashes on slow pages (networkidle timeout caught)
+
+---
+
+### DOM element injection
+Problem: OmniParser cannot detect blank input fields (search bars with
+no text, no icon). YOLO and OCR both miss them.
+
+Solution: query the live DOM via Playwright JS before each inference.
+
+BrowserEnv.get_interactive_elements() returns:
+```python
+[
+  {
+    "tag":       "input",
+    "type":      "text",
+    "label":     "Search Amazon.in",   # placeholder / aria-label / name / id
+    "bbox_norm": [x1, y1, x2, y2]     # normalised to [0,1] over viewport
+  },
+  ...
+]
+```
+
+Queried selectors:
+  input:not([type="hidden"]), textarea, select, button,
+  [role="searchbox"], [role="combobox"], [role="textbox"]
+
+Invisible elements filtered: display:none, visibility:hidden, opacity:0,
+elements outside viewport.
+
+In training_style mode, DemoRunner re-renders the entire SoM image with
+DOM elements first (_rebuild_som_dom_priority):
+
+  Mark 0, 1, ... → DOM inputs / textareas    (text inputs first)
+  Mark N, N+1, ... → DOM buttons
+  Mark M, M+1, ... → top OmniParser elements
+  Total capped at 15 marks
+
+This converts the model's Mark:0 bias from a bug into a feature: the
+search bar is always Mark 0, so "Mark: 0" responses click correctly.
+
+DOM elements drawn with blue bounding-box outline + red circle marker
+(blue distinguishes them from OmniParser detections visually).
