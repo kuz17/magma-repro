@@ -167,21 +167,27 @@ Implemented and visually validated.
 Purpose:
 Training-style Set-of-Mark representation.
 
-Target style:
-- compact numbered markers
-- minimal visual obstruction
-- marker placement at bbox centers
+Target style (reworked 2026-07-02 to match the paper's actual box-outline
+style, replacing the earlier center-dot marker):
+- red box outline around each placed element (`width=2`)
+- numeric label placed at whichever of the box's 8 candidate corners
+  overlaps least with other boxes/labels already drawn — ported from
+  Magma's own `_find_least_overlapping_corner`
+  (`agents/ui_agent/util/som.py` in `microsoft/Magma`)
 
 Parameters (settled):
-- radius = 9 px
-- font = DejaVuSans-Bold, 12pt (fallback: PIL default)
-- marker = red fill, white 1px outline, white numeric label
+- font = DejaVuSans-Bold, 12pt
+- label = red-filled rectangle behind white numeric text
 - MIN_AREA_FLOOR = 1e-6 (rejects only degenerate / zero-area bboxes)
-- MAX_MARKS = 20
-- MIN_SPACING = 1.3 (multiplier on marker diameter)
+- MAX_MARKS = 100
+- MIN_SPACING = 0.7 (multiplier on marker diameter; retuned from 1.3 for
+  the box-outline style — see Decisions log)
+- coordinates clamped to [0,1] before placement (handles OmniParser
+  detections that exceed image bounds on edge-touching boxes)
 
 Status:
-Implemented, validated on 10-sample batch, scaled to full 10k.
+Implemented, validated on 10-sample batch, scaled to full 10k (10,000/10,000
+succeeded, 0 failures, 2026-07-02 — see `render_log.txt`).
 
 ## Paper-style SoM pipeline
 image + elements
@@ -190,9 +196,13 @@ filter degenerate bboxes (area > MIN_AREA_FLOOR)
     ↓
 sort candidates by area descending
     ↓
+clamp bbox coords to [0,1]
+    ↓
 greedy non-overlap placement, capped at MAX_MARKS
     ↓
-draw numbered markers at bbox centers
+draw box outline per placed element
+    ↓
+label each box at its least-overlapping corner
     ↓
 save SoM image + _marks.json sidecar
 
@@ -206,6 +216,9 @@ save SoM image + _marks.json sidecar
                     renderer + sampler, writes output JSONL
 
 ### Grounding tasks and sampling weights
+One task type is sampled **per screenshot** (not per element) and applied
+to every element on that page, producing one turn pair per element:
+
 | Task         | Weight |
 |--------------|--------|
 | text→bbox    | 0.4    |
@@ -214,21 +227,34 @@ save SoM image + _marks.json sidecar
 | point→text   | 0.1    |
 
 Input field subtasks (input→point, input→bbox) sampled with equal
-probability (0.5/0.5) and merged into the same conversation.
+probability (0.5/0.5) and appended as one additional turn pair — but only
+when the page actually has `data_type == "input"` elements. Verified
+empirically: SeeClick-Web has **zero** such elements across the full
+113,142-element / 10k-sample corpus, so in practice this turn never
+appears in the current corpus (reworked 2026-07-02; previously every
+conversation ended on a "No input areas found." filler turn regardless).
 
 ### Output schema (conversations.jsonl)
-One JSON object per line, one object per screenshot:
+One JSON object per line, one object per screenshot (reworked 2026-07-02:
+one turn pair per element, matching paper Figure 12, rather than one
+merged multi-line assistant turn covering every element):
 
 {
   "image": "<img_filename>",
+  "som_image": "<path to rendered SoM png, or null>",
   "conversations": [
-    {"from": "user",      "value": "<image>\n<task prompt>"},
-    {"from": "assistant", "value": "<answer>"},
-    ...                   // optional merged input-field turns
+    {"from": "user",      "value": "<image>\n<task prompt for element 0>"},
+    {"from": "assistant", "value": "<answer for element 0>"},
+    {"from": "user",      "value": "<task prompt for element 1>"},
+    {"from": "assistant", "value": "<answer for element 1>"},
+    ...                   // one pair per element, then optional
+                           // input-field pair if input elements exist
   ]
 }
 
 Output location: data/processed/seeclick_web/conversations.jsonl
+(regenerated 2026-07-02 from the reworked renders: 9,996 written, 4 skipped
+empty, 0 skipped missing-sidecar; split 8,997 train / 999 val, seed=42).
 
 Format validated against paper Figure 12.
 
@@ -238,7 +264,9 @@ Format validated against paper Figure 12.
   `MIN_AREA_FLOOR = 1e-6` and rely on `MAX_MARKS` + non-overlap for
   clutter control.
 - Tried `MIN_SPACING = 2.0`: dropped legitimate stacked nav items in
-  vertical menus. Lowered to 1.3.
+  vertical menus. Lowered to 1.3, then to 0.7 after switching from
+  center-dot to box-outline markers (1.3 was tuned for the dot style and
+  over-dropped once boxes replaced dots — see renderer section above).
 - Considered tag-based actionability filtering (keep only
   `a` / `button` / `input`). Not applicable: SeeClick schema has no
   tag field, and the dataset is already filtered to interactive
@@ -267,11 +295,14 @@ Completed:
 - first visual alignment validation
 - paper-style SoM renderer
 - 10-sample SoM batch visual validation
-- full 10k SoM rendering
+- full 10k SoM rendering (reworked box-outline style, re-rendered
+  2026-07-02: 10,000/10,000 succeeded, 0 failures)
 - Magma-style conversation formatting (all four grounding tasks +
-  input field subtasks)
+  input field subtasks; reworked 2026-07-02 to one turn-pair per
+  element, matching Figure 12)
 - conversations.jsonl written and validated against Figure 12
-- train/val split (90/10, seed=42)
+  (regenerated 2026-07-02: 9,996 samples)
+- train/val split (90/10, seed=42) (regenerated 2026-07-02: 8,997/999)
 - UIAgent implementation (ui_agent.py)
 - Eval harness (eval.py) — two modes: baseline and finetuned
 - Baseline eval: 402/500 samples, click accuracy 1.7%
@@ -285,7 +316,13 @@ Completed:
   screenshots
 
 Current focus:
-- Run finetuned eval (eval.py --mode finetuned) to get delta
+- **LoRA adapter (models/lora_adapter/) is now STALE** — it was trained on
+  pre-rework data (old dot-marker renders, merged mega-turn format).
+  Retrain on the new train.jsonl before trusting finetuned eval numbers.
+- Statistical validation pass on the new conversations.jsonl (still open,
+  see TODO.md)
+- Retrain QLoRA on new train.jsonl, then run finetuned eval
+  (eval.py --mode finetuned) to get delta
 - Obtain Magma-8B reference numbers
 
 ---

@@ -46,8 +46,8 @@
 ### Paper-style SoM Renderer
 - [x] Create render_som.py
 - [x] Render compact numbered markers
-- [x] Place markers at bbox centers
-- [x] Add circular marker backgrounds
+- [x] Place markers at bbox centers (superseded — see box-outline rework below)
+- [x] Add circular marker backgrounds (superseded — see box-outline rework below)
 - [x] Improve label readability
 - [x] Prevent overlap between nearby marks
 - [x] Filter degenerate / zero-area UI elements
@@ -57,8 +57,17 @@
 - [x] Tune MIN_AREA_FLOOR / MIN_SPACING / MAX_MARKS to paper-quality
 - [x] Record decisions log
 - [x] Scale SoM rendering to full 10k subset
+- [x] Rework marker style to box outline + corner label (matches paper,
+      ported from Magma's `_find_least_overlapping_corner`) — 2026-07-02
+- [x] Retune MIN_SPACING 1.3 → 0.7 for box-outline style (5.9% → 1.5% drop
+      on full 10k corpus) — 2026-07-02
+- [x] Clamp element coords to [0,1] in apply_som — 2026-07-02
+- [x] Re-render full 10k subset with reworked renderer — 2026-07-02
+      (10,000/10,000 succeeded, 0 failures)
 - [ ] Spot-check statistical distribution of marks per image across full 10k
 - [ ] Decide adaptive scaling policy for very high/low resolutions (deferred)
+- [ ] Label-offset fallback for 81+-element tail pages (21 pages stay at
+      26-35% element drop regardless of MIN_SPACING; deferred, not blocking)
 
 ## Formatting
 - [x] Implement task_samplers.py
@@ -76,6 +85,14 @@
 - [x] Generate Magma-style conversations
 - [x] Write conversations.jsonl
 - [x] Validate output format against paper Figure 12
+- [x] Rework to one turn-pair per element instead of merged mega-turns
+      (matches Figure 12 exactly) — 2026-07-02
+- [x] Make input-field turn conditional on page having input elements
+      (SeeClick-Web has zero — confirmed empirically across full corpus) — 2026-07-02
+- [x] Regenerate conversations.jsonl from reworked renders — 2026-07-02
+      (9,996 written, 4 skipped empty, 0 skipped missing-sidecar)
+- [x] Re-split train/val from regenerated conversations.jsonl — 2026-07-02
+      (8,997 train / 999 val, seed=42)
 - [ ] Statistical validation pass on conversations.jsonl
       - record count
       - task distribution
@@ -174,6 +191,11 @@
 - [x] Run Kaggle T4 training (3 epochs, ~8.9k samples)
 - [x] Export LoRA adapter (adapter_model.safetensors, 148.7MB)
 - [x] Save adapter to models/lora_adapter/
+      **STALE as of 2026-07-02** — trained on pre-rework data (old
+      dot-marker renders, merged mega-turn format). Treat as a "before"
+      data point only; retrain on the new train.jsonl before trusting
+      finetuned eval numbers.
+- [ ] Retrain QLoRA on regenerated train.jsonl (2026-07-02 rework)
 - [ ] Evaluate fine-tuned model (see Evaluation above)
 - [ ] Save results/eval_finetuned.json
 - [ ] Compute baseline → finetuned delta
@@ -221,9 +243,15 @@
 - [ ] Docker containerization
 
 ## Immediate Next Steps
-1. Run finetuned eval on local machine or Kaggle.
-2. Compute and record baseline → finetuned delta.
-3. Download Magma-8B in 4-bit (Kaggle) and run reference eval.
-4. Generate comparison table: baseline / finetuned / Magma-8B.
-5. Analyze fine-tuned failure cases.
-6. Write thesis experiment section draft.
+1. Statistical validation pass on the new conversations.jsonl (count,
+   task distribution, bbox ranges, empty-conversation detection).
+2. Retrain QLoRA on the regenerated train.jsonl (Kaggle T4) — current
+   adapter is stale, trained on pre-rework data.
+3. Run finetuned eval on local machine or Kaggle.
+4. Compute and record baseline → finetuned delta.
+5. Re-check whether the Mark:0 bias persists post-retrain (suspected root
+   cause — the old merged-mega-turn format — is now fixed).
+6. Download Magma-8B in 4-bit (Kaggle) and run reference eval.
+7. Generate comparison table: baseline / finetuned / Magma-8B.
+8. Analyze fine-tuned failure cases.
+9. Write thesis experiment section draft.

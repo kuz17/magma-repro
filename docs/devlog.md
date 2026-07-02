@@ -592,3 +592,114 @@ Finetuned eval   : PENDING
 - `inspect` — open `/tmp/vlm_input_finetuned.png` with xdg-open
 - `fill <label> <value>` — DOM-direct fill by placeholder/label
 - `marks` — run OmniParser only (no Qwen) and open SoM image
+
+---
+
+### 2026-07-02
+
+## Goal
+Rework the SoM renderer and conversation format to match the paper's actual
+spec (Figure 12), then re-run the full pipeline on the new format before
+trusting the existing fine-tuned adapter's results.
+
+---
+
+## Completed
+
+### SoM renderer: box outlines replace center dots
+`apply_som` previously drew a filled circle at each element's bbox center.
+Ported Magma's actual `_find_least_overlapping_corner` (from
+`agents/ui_agent/util/som.py` in `microsoft/Magma` on GitHub — no vendored
+copy existed locally) so marks are now a red box outline with the number
+label placed at whichever of the box's 8 candidate corners overlaps least
+with other boxes/labels already drawn. `OmniParserSoM` (the live-inference
+path in `ui_agent.py`) needed no change — it already renders box outlines
+via OmniParser's own `BoxAnnotator`.
+
+`MIN_SPACING` retuned 1.3 → 0.7: the old value was tuned for the retired
+dot-marker style and, with box outlines, was dropping plainly
+non-overlapping nav elements. Swept against the full 10k corpus: 0.7 cuts
+overall element drop from 5.9% to 1.5%. The 81+-element tail bucket (21
+pages, ~0.2% of corpus) stays 26-35% drop at every spacing tested — doesn't
+respond to spacing tuning, needs a label-offset fallback instead; deferred.
+
+Also added: coordinate clamping to [0,1] inside `apply_som` (live OmniParser
+detections can exceed image bounds on edge-touching boxes; every downstream
+consumer of `placed` — mark_to_center, formatter, eval — now sees valid
+coords unconditionally).
+
+### Conversation format: one turn-pair per element
+Previously each grounding task merged every element on a page into a single
+assistant turn (N coordinate lines in one response). Paper Figure 12 uses
+one user/assistant turn pair per element instead. `task_samplers.py`
+rewritten so `text_to_bbox` / `text_to_point` / `bbox_to_text` /
+`point_to_text` each return a list of turn pairs (one per element) rather
+than one merged turn; `conversation.py` flattens that list into the output.
+
+### Input-field turn now conditional
+Verified empirically that SeeClick-Web has **zero** `data_type == "input"`
+elements across the full 113,142-element / 10k-sample corpus. Every
+conversation used to end on an identical "No input areas found." filler
+turn from `input_field.py` — pure noise, no grounding signal. Fixed:
+`build_conversation` now only appends the input-field turn pair when the
+page actually has input elements.
+
+### Script hygiene
+`test_render_batch.py`, `test_render_som.py`, `test_render.py` all had
+`test_` prefixes but are side-effecting production scripts, not real tests.
+Bare `pytest` silently collected and executed them — including a full 10k
+re-render — which caused one accidental triple-concurrent re-render this
+session (caught and killed mid-run). Renamed to `render_batch.py`,
+`manual_render_som.py`, `manual_render_ui.py`. Also fixed
+`manual_render_som.py` calling `.save()` on the tuple `apply_som` now
+returns, and `example.py` calling `build_conversation()` without the
+required `placed=` arg. `pytest -q` now runs clean (6 passed, `test_bbox.py`
+only) with no side effects.
+
+### Full 10k re-render (Phase 2)
+Ran `render_batch.py` against the reworked renderer: **10,000/10,000
+succeeded, 0 failures**, 22m34s (7.38 renders/sec). Log at
+`data/interim/renders/seeclick_web/batch/render_log.txt`.
+
+### Regenerated conversations.jsonl (Phase 3)
+Ran `python -m src.formatting.formatter` against the fresh renders:
+9,996 written, 4 skipped (empty), 0 skipped (missing sidecar). Re-split via
+`python -m src.clean.split`: `train.jsonl` (8,997) / `val.jsonl` (999),
+seed=42. Spot-checked output — one turn-pair per element, matches paper
+Figure 12 format. The old (04:01) `conversations.jsonl`/`train.jsonl`/
+`val.jsonl` predated this render and have been overwritten.
+
+### Committed
+All of the above (renderer, formatting, renames) committed in `2713576`.
+`data/processed/` and `data/interim/` remain gitignored, as before — only
+code changed hands.
+
+---
+
+## Current Status
+
+```
+SoM renderer (box outlines)   : COMPLETE
+Conversation format (Fig 12)  : COMPLETE
+Full 10k re-render            : COMPLETE (0 failures)
+conversations.jsonl rebuild   : COMPLETE (9,996 samples)
+train/val split                : COMPLETE (8,997 / 999)
+LoRA adapter (models/lora_adapter/) : STALE — trained on pre-rework data
+Finetuned eval                : PENDING (blocked on retrain)
+```
+
+---
+
+## Next
+
+1. Statistical validation pass on the new `conversations.jsonl` (record
+   count, task distribution, bbox range checks, empty-conversation
+   detection) — cheap sanity check before spending T4 hours on a retrain.
+2. Retrain QLoRA on the new `train.jsonl` (Kaggle T4, same config as
+   before) — the current adapter was trained on the old merged-mega-turn,
+   dot-marker format and is a "before" data point, not the project's real
+   result.
+3. Run finetuned eval, compute baseline → finetuned delta.
+4. Re-check whether the Mark:0 bias persists now that the merged-mega-turn
+   format (suspected root cause) is gone.
+5. Magma-8B reference numbers; comparison table; thesis sections.
