@@ -53,69 +53,59 @@ def _fmt_point(cx: float, cy: float) -> str:
 # The caller is responsible for prepending <image>\n to the first user turn.
 # ─────────────────────────────────────────────
 
-def text_to_bbox(elements: list[Element]) -> tuple[str, str]:
+def text_to_bbox(elements: list[Element]) -> list[tuple[str, str]]:
     """
-    User gives element text descriptions one per turn.
-    Assistant returns bbox + mark index.
+    One turn pair per element: user gives the element's text description,
+    assistant returns bbox + mark index. The task instruction prefix is
+    carried only on the first turn pair.
 
     Paper example (Figure 12b):
         User:      "November 7, 2013"
         Assistant: "Coordinate: (0.27, 0.29, 0.37, 0.30). Mark: 2."
     """
-    user_lines = []
-    assistant_lines = []
-
-    for el in elements:
-        user_lines.append(el.text)
-        assistant_lines.append(
-            f"Coordinate: {_fmt_bbox(el.bbox)}. Mark: {el.mark_id}."
-        )
-
-    # First user turn carries the task instruction prefix
     prefix = (
         "From this webpage capture, I'll give descriptions. "
         "Predict each element's bounding box and mark index, if present."
     )
-    user_turn = prefix + "\n" + "\n".join(user_lines)
-    assistant_turn = "\n".join(assistant_lines)
 
-    return user_turn, assistant_turn
+    turns = []
+    for i, el in enumerate(elements):
+        user_turn = el.text if i > 0 else f"{prefix}\n{el.text}"
+        assistant_turn = f"Coordinate: {_fmt_bbox(el.bbox)}. Mark: {el.mark_id}."
+        turns.append((user_turn, assistant_turn))
+
+    return turns
 
 
-def text_to_point(elements: list[Element]) -> tuple[str, str]:
+def text_to_point(elements: list[Element]) -> list[tuple[str, str]]:
     """
-    User gives element text / task instruction.
-    Assistant returns center point + mark index.
+    One turn pair per element: user gives the task instruction, assistant
+    returns center point + mark index.
 
     Paper example (Figure 12c):
         User:      "execute the step 'its a stopwatch that measures time',
                     where do I direct my attention?"
         Assistant: "Coordinate: (0.04, 0.12). Mark: 12"
     """
-    user_lines = []
-    assistant_lines = []
-
+    turns = []
     for el in elements:
         cx, cy = _center(el.bbox)
-        user_lines.append(
+        user_turn = (
             f'To execute the step "{el.text}", '
             f"where do I direct my attention? "
             f"Please provide the coordinate and the bounding box's mark index."
         )
-        assistant_lines.append(
-            f"Coordinate: {_fmt_point(cx, cy)}. Mark: {el.mark_id}."
-        )
+        assistant_turn = f"Coordinate: {_fmt_point(cx, cy)}. Mark: {el.mark_id}."
+        turns.append((user_turn, assistant_turn))
 
-    user_turn = "\n".join(user_lines)
-    assistant_turn = "\n".join(assistant_lines)
-
-    return user_turn, assistant_turn
+    return turns
 
 
-def bbox_to_text(elements: list[Element]) -> tuple[str, str]:
+def bbox_to_text(elements: list[Element]) -> list[tuple[str, str]]:
     """
-    User gives bbox coordinates.
-    Assistant returns text content + mark index.
+    One turn pair per element: user gives bbox coordinates, assistant
+    returns text content + mark index. The task instruction prefix is
+    carried only on the first turn pair.
 
     Paper example (Figure 12a):
         User:      "(0.10, 0.29, 0.13, 0.30)"
@@ -127,46 +117,37 @@ def bbox_to_text(elements: list[Element]) -> tuple[str, str]:
         "adding the mark index when relevant."
     )
 
-    user_lines = [prefix]
-    assistant_lines = []
+    turns = []
+    for i, el in enumerate(elements):
+        bbox_str = _fmt_bbox(el.bbox)
+        user_turn = bbox_str if i > 0 else f"{prefix}\n{bbox_str}"
+        assistant_turn = f"Text: {el.text}. Mark: {el.mark_id}."
+        turns.append((user_turn, assistant_turn))
 
-    for el in elements:
-        user_lines.append(_fmt_bbox(el.bbox))
-        assistant_lines.append(
-            f"Text: {el.text}. Mark: {el.mark_id}."
-        )
-
-    user_turn = "\n".join(user_lines)
-    assistant_turn = "\n".join(assistant_lines)
-
-    return user_turn, assistant_turn
+    return turns
 
 
-def point_to_text(elements: list[Element]) -> tuple[str, str]:
+def point_to_text(elements: list[Element]) -> list[tuple[str, str]]:
     """
-    User gives center point + mark index.
-    Assistant returns text description of the element.
+    One turn pair per element: user gives center point + mark index,
+    assistant returns text description of the element.
 
     Paper example (Figure 12d):
         User:      "How does the element at (0.93, 0.41) (Mark 0)
                     contribute to the overall user experience?"
         Assistant: "make selection"
     """
-    user_lines = []
-    assistant_lines = []
-
+    turns = []
     for el in elements:
         cx, cy = _center(el.bbox)
-        user_lines.append(
+        user_turn = (
             f"How does the element at {_fmt_point(cx, cy)} "
             f"(Mark {el.mark_id}) contribute to the overall user experience?"
         )
-        assistant_lines.append(el.text)
+        assistant_turn = el.text
+        turns.append((user_turn, assistant_turn))
 
-    user_turn = "\n".join(user_lines)
-    assistant_turn = "\n".join(assistant_lines)
-
-    return user_turn, assistant_turn
+    return turns
 
 
 # ─────────────────────────────────────────────
@@ -180,12 +161,12 @@ TASKS = [text_to_point, text_to_bbox, point_to_text, bbox_to_text]
 def sample_grounding_task(
     elements: list[Element],
     rng: random.Random | None = None,
-) -> tuple[str, str]:
+) -> list[tuple[str, str]]:
     """
     Sample one grounding task according to paper weights [0.4, 0.4, 0.1, 0.1]
     and apply it to the given elements.
 
-    Returns (user_turn, assistant_turn).
+    Returns a list of (user_turn, assistant_turn) pairs, one per element.
     """
     r = rng or random
     task_fn = r.choices(TASKS, weights=TASK_WEIGHTS, k=1)[0]

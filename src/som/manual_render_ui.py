@@ -1,10 +1,11 @@
-#test_render_som.py
+#manual_render_ui.py
+
 import json
 from pathlib import Path
 
 from PIL import Image
 
-from src.som.render_som import apply_som
+from src.som.render_ui import apply_ui
 
 
 FILTERED_PATH = (
@@ -17,8 +18,7 @@ IMAGE_ROOT = Path(
 )
 
 OUTPUT_PATH = (
-    "data/interim/renders/"
-    "som_render_001.png"
+    "data/interim/renders/first_render.png"
 )
 
 
@@ -28,30 +28,29 @@ with open(FILTERED_PATH, "r") as f:
 
 sample = data[0]
 
+print("Using sample:")
+print(sample["img_filename"])
+
+
 matches = list(
     IMAGE_ROOT.rglob(sample["img_filename"])
 )
 
 image_path = matches[0]
 
-print("Using image:")
+print("Resolved image path:")
 print(image_path)
+
 
 image = Image.open(image_path)
 
-rendered = apply_som(
+rendered = apply_ui(
     image,
     sample["elements"],
 )
 
-Path(
-    "data/interim/renders"
-).mkdir(
-    parents=True,
-    exist_ok=True,
-)
+Path("outputs").mkdir(exist_ok=True)
 
 rendered.save(OUTPUT_PATH)
 
-print(f"Saved render to:")
-print(OUTPUT_PATH)
+print(f"Saved render to {OUTPUT_PATH}")

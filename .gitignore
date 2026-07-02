@@ -33,3 +33,4 @@ outputs/
 models/
 renders_som.zip
 docs/HANDOFF.md
+docs/experiments/hf/test.py

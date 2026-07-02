@@ -623,7 +623,7 @@ if __name__ == "__main__":
     RENDERS = Path("data/interim/renders/seeclick_web/batch")
     som_files = sorted(RENDERS.glob("*_som.png"))
     if not som_files:
-        print("No SoM renders found. Run test_render_batch.py first.")
+        print("No SoM renders found. Run src/som/render_batch.py first.")
         sys.exit(1)
 
     som_path   = som_files[0]

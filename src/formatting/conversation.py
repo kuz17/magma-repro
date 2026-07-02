@@ -32,19 +32,23 @@ def build_conversation(
 
     input_elements = [el for el in elements if el.data_type == "input"]
 
-    grounding_user, grounding_assistant = sample_grounding_task(
-        elements, rng=rng
-    )
-    input_user, input_assistant = sample_input_task(
-        input_elements, rng=rng
-    )
+    grounding_turns = sample_grounding_task(elements, rng=rng)
 
-    conversations = [
-        {"from": "user",      "value": f"<image>\n{grounding_user}"},
-        {"from": "assistant", "value": grounding_assistant},
-        {"from": "user",      "value": input_user},
-        {"from": "assistant", "value": input_assistant},
-    ]
+    conversations = []
+    for i, (user_turn, assistant_turn) in enumerate(grounding_turns):
+        user_value = f"<image>\n{user_turn}" if i == 0 else user_turn
+        conversations.append({"from": "user",      "value": user_value})
+        conversations.append({"from": "assistant", "value": assistant_turn})
+
+    # Only add an input-field turn pair when the page actually has input
+    # elements — otherwise every example would end on an identical,
+    # zero-information "No input areas found." filler turn.
+    if input_elements:
+        input_user, input_assistant = sample_input_task(
+            input_elements, rng=rng
+        )
+        conversations.append({"from": "user",      "value": input_user})
+        conversations.append({"from": "assistant", "value": input_assistant})
 
     return {
         "image":         sample["img_filename"],
