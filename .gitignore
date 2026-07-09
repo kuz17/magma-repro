@@ -1,36 +1,35 @@
 # virtual env
 .venv/
-
 # datasets
 data/
-
 # python
 __pycache__/
 *.pyc
-
 # notebooks
 .ipynb_checkpoints/
-
 # logs
 logs/
-
+*.log
 # OS junk
 .DS_Store
 Thumbs.db
-
 # vscode
 .vscode/
-
-#output
+# output
 outputs/
-
 # model artifacts
 *.pt
 *.pth
 *.ckpt
-
-#models
+*.safetensors
+*.bin
+# models
 models/
-renders_som.zip
+checkpoint-*/
+# large archives / renders
+*.zip
+# scratch / temp files
+temp.*
+**/temp.*
+docs/experiments/hf/test*.py
 docs/HANDOFF.md
-docs/experiments/hf/test.py

@@ -1,5 +1,0 @@
-# fine-tuned
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m src.agent.click_visualizer --image outputs/demo/screenshot.png --interactive --lora models/lora_adapter --tag finetuned --training-style
-
-# baseline 
-python -m src.agent.click_visualizer --image outputs/demo/screenshot.png --interactive --tag baseline

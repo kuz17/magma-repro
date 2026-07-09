@@ -284,6 +284,10 @@ Interpretation: base Qwen produces wrong output format (no SoM context,
 no mark-lookup protocol) — near-zero accuracy is expected and establishes
 the floor for the SoM fine-tuning delta.
 
+NOTE (2026-07-02): this number was later found to be an artifact of the
+eval harness only ever testing Mark 0 per page (see eval.py fix below).
+Superseded by results/eval_baseline_v2.json — see 2026-07-02 (continued).
+
 ### Fine-Tuning — finetune.py
 - Implemented src/train/finetune.py: full QLoRA pipeline
 - SoMDataset: loads train.jsonl + SoM renders, serves first grounding
@@ -300,6 +304,11 @@ the floor for the SoM fine-tuning delta.
 - Training: Qwen2.5-VL-3B-Instruct, 3 epochs on ~8.9k SoM conversations
 - LoRA adapter saved: adapter_model.safetensors (148.7MB)
 - Adapter downloaded and stored at models/lora_adapter/ (in .gitignore)
+
+NOTE (2026-07-02): this adapter was later diagnosed as trained on a
+buggy data format (merged mega-turn: one assistant turn listing every
+mark on the page, always starting "Mark: 0") and superseded — see
+2026-07-02 (continued).
 
 ### OmniParser — Installation Complete
 - OmniParser-v2.0 weights installed at models/omniparser/
@@ -340,7 +349,9 @@ the floor for the SoM fine-tuning delta.
 Pipeline:      COMPLETE
 Agent:         COMPLETE (Qwen2.5-VL-3B-Instruct, 4-bit, OmniParser+AnnotationSoM)
 Baseline eval: COMPLETE — 1.7% click accuracy (results/eval_baseline.json)
+                [SUPERSEDED 2026-07-02 — see eval.py Mark-0 blind spot fix]
 Fine-tuning:   COMPLETE — LoRA adapter at models/lora_adapter/ (148.7MB)
+                [SUPERSEDED 2026-07-02 — trained on buggy merged-mega-turn data]
 Demo:          COMPLETE — click_visualizer.py confirmed on real screenshots
 Finetuned eval: NEXT   — re-run eval.py --mode finetuned --adapter models/lora_adapter
 ```
@@ -413,6 +424,11 @@ Fix: `PROMPT_TEMPLATE` rewritten to exact training phrasing. Element
 list injection removed (training never included one). After fix, model
 now returns correct format: "Coordinate: (x, y). Mark: N."
 
+NOTE (2026-07-02): this prompt fix was necessary but not sufficient —
+the deeper root cause (merged-mega-turn training data always starting
+"Mark: 0") wasn't found until the renderer/formatter rework. See
+2026-07-02 (continued).
+
 ### Bug: Wrong mark→center mapping in training_style mode
 `apply_som` re-sorts elements by area and assigns NEW sequential IDs
 (largest element = Mark 0). The old code built `mark_to_center` from
@@ -472,6 +488,10 @@ mode, the entire SoM image is re-rendered from scratch via
 With search bar as Mark 0, the model's "Mark: 0" output now correctly
 clicks the search field. DOM elements drawn with blue outline + red
 circle (blue distinguishes them visually; red circle matches training).
+
+NOTE (2026-07-02): this was a workaround, not a fix — it exploited the
+bias rather than removing it. The actual root cause (training data
+format) was found and fixed this session; see below.
 
 ---
 
@@ -703,3 +723,177 @@ Finetuned eval                : PENDING (blocked on retrain)
 4. Re-check whether the Mark:0 bias persists now that the merged-mega-turn
    format (suspected root cause) is gone.
 5. Magma-8B reference numbers; comparison table; thesis sections.
+
+---
+
+### 2026-07-02 (continued)
+
+## Goal
+Diagnose the Mark:0 collapse's actual root cause via a controlled smoke
+test before committing Kaggle hours to a full retrain; fix a blind spot
+in the eval harness discovered along the way; run the full retrain on
+the reworked data ahead of the demo presentation.
+
+---
+
+## Completed
+
+### Root cause of Mark:0 collapse confirmed
+Inspected the *old* (pre-rework) fine-tuning notebook's printed sample
+output directly: the old training data's assistant turn was one giant
+string concatenating every mark on the page in order, e.g.
+`"Coordinate: (0.49, 0.08). Mark: 0.\nCoordinate: (0.31, 0.09). Mark: 1.\n...`
+— this is the "merged mega-turn" format the 2026-07-02 renderer/formatter
+rework already targeted, confirmed here as the actual mechanism: every
+training example taught the model that its answer always *starts* with
+"Coordinate: (...). Mark: 0.", regardless of the query. This fully
+explains the inference-time collapse and validates that the formatter
+rework (one turn-pair per element) is the correct fix — provided the
+training script is also updated to use every turn-pair per page, not
+just the first (see below).
+
+Also confirmed old `finetune.py`'s `SoMDataset` only ever used
+`convs[0]`/`convs[1]` (the first turn-pair) per page — compounding the
+mega-turn issue, since the sole training target per page was always
+Mark 0's (merged) answer.
+
+### Kaggle smoke-test run (200 pages)
+Built a new training cell set (multi-turn-per-page dataset + collator)
+reusing the original run's proven config verbatim (LoRA r=16/alpha=32/
+dropout=0.05, targets incl. gate/up/down_proj, LR=2e-4, warmup=0.03,
+fp16 compute, bs=1/grad_accum=8) with two deliberate changes:
+  - MAX_SEQ_LEN 1024 → 2048 (dense pages up to 100 marks need room for
+    every turn-pair, not just the first ~20)
+  - Dataset/collator now build ONE multi-turn conversation per page
+    (system + every turn-pair) and mask loss across ALL assistant spans
+
+### Collator bugs found and fixed during smoke test
+1. First attempt used `return_offsets_mapping` to locate assistant
+   spans for masking — silently broke after the image placeholder
+   expands into many tokens (common failure mode for multimodal
+   processors). Symptom: masking assertion caught only 1 "Mark:" in
+   trainable labels instead of many. Fixed by switching to token-
+   subsequence matching (tokenize each assistant answer standalone,
+   find it as a subsequence in the full input_ids) — doesn't depend on
+   processor offset support at all.
+2. Diagnostic key (`_matched_spans`) was initially stored inside the
+   collator's returned dict, which gets passed directly to
+   `model.forward(**inputs)` by the Trainer — crashed with
+   `TypeError: unexpected keyword argument '_matched_spans'`. Fixed by
+   storing it as an instance attribute (`collator.last_matched_spans`)
+   instead of a batch dict key.
+3. Added a hard assertion cell (run before training, not skippable)
+   that fails loudly if fewer than 2 assistant spans get correctly
+   masked on a real sample — specifically to prevent silently
+   reproducing the original bug in a new form.
+
+### Eval harness blind spot found and fixed
+`extract_first_element` in `eval.py` only ever read `convs[0]`/`convs[1]`
+— same pattern as the old training bug. Since the first turn-pair on a
+page is (almost) always Mark 0, **every eval sample's ground truth was
+also always Mark 0** — meaning a collapsed model (always predicting
+Mark 0) would score *identically* to a genuinely fixed model. The old
+1.7% baseline number was measured this way and is not representative.
+
+Fix: added `extract_all_elements()` (returns every eligible turn-pair
+on a page, not just the first) and changed `run_eval` to sample one
+element per page via `random.Random(1000 + idx)` (deterministic,
+spread across all marks). Also added a `gt_mark == 0` vs `gt_mark != 0`
+accuracy breakdown to both console output and the saved JSON
+(`click_acc_gt_mark_0` / `click_acc_gt_mark_non0`) — this split is the
+actual diagnostic for collapse: near-zero non-zero-mark accuracy would
+mean still collapsed, comparable accuracy means fixed.
+
+### Re-measured baseline (unbiased)
+```
+Results [baseline]  —  80 evaluated, 20 skipped   (results/eval_baseline_v2.json)
+  Click accuracy (point in GT bbox) : 0.000  (0.0%)
+  Click acc when gt_mark == 0        : 0.000  (n=27)
+  Click acc when gt_mark != 0        : 0.000  (n=53)
+```
+Dropped from the old (Mark-0-only) 1.7% to a real 0.0% once tested
+against a representative spread of marks — expected: base Qwen has no
+SoM training and no marks to anchor on, and small/footer/generic
+elements are much harder than the large, distinctive Mark-0 elements
+the old eval exclusively tested.
+
+### Smoke-test fine-tuned result (200 pages, 25 steps, ~6 min on Kaggle T4)
+```
+Results [finetuned]  —  80 evaluated, 20 skipped   (results/eval_smoke_finetuned.json)
+  Click accuracy (point in GT bbox) : 0.275  (27.5%)
+  Click acc when gt_mark == 0        : 0.370  (n=27)
+  Click acc when gt_mark != 0        : 0.226  (n=53)
+  [text_to_bbox]  n=45  click_acc=0.378
+  [text_to_point] n=35  click_acc=0.143
+```
+Non-zero-mark accuracy (22.6%) is not near-zero — **collapse is fixed**.
+The mark0-vs-non0 gap (37.0% vs 22.6%) is a plausible ordinary pattern
+(header/logo elements at Mark 0 tend to be visually distinctive), not
+the collapse signature, which would show non-zero-mark accuracy near 0%.
+
+### Dataset scoping note (subtask filtering)
+`SoMPageDataset._parse` keeps a page only if at least one turn-pair
+contains `Coordinate:` — same filter the original proven pipeline used,
+now applied per-turn-pair. Since task type is sampled per-page (not
+per-element) at weights text→bbox 0.4 / text→point 0.4 / bbox→text 0.1 /
+point→text 0.1, this means only pages whose sampled task is
+`text_to_bbox`/`text_to_point` survive: **728 of 8,997 train pages**.
+This is intentional, not a bug — it matches exactly what `eval.py`
+measures (`extract_all_elements` also only accepts these two task
+types). `bbox_to_text`/`point_to_text` pages are out of scope for this
+ablation; noted as explicit future work (see TODO.md), not a defect —
+training on them would need a different loss target format (free text
+description, not `Coordinate:`/`Mark:`) and wouldn't move the grounding
+accuracy metric this experiment reports.
+
+### Full retrain launched
+Same config as the smoke test, applied to all 728 eligible pages
+(`ceil(728/8) = 91` steps, ~18-20 min estimated on Kaggle T4 based on
+smoke-test throughput — far faster than the initial ~4.3hr estimate,
+which assumed all 8,997 pages would train rather than the 728 that
+actually pass the `Coordinate:` filter). Adapter saved to
+`models/lora_adapter_v2/` (kept separate from both the stale original
+adapter and the smoke-test adapter). Hit one environment issue mid-run
+(`transformers` lazy-import crash on a stray `tensorflow_text` backend
+check after a fresh kernel session) — resolved via clean uninstall/
+reinstall of the pinned dependency versions + full kernel restart.
+
+Result: PENDING — training completed, full eval + compare not yet run.
+
+---
+
+## Current Status
+
+```
+Mark:0 collapse root cause  : CONFIRMED (old merged-mega-turn training data)
+Multi-turn training pipeline: COMPLETE (Kaggle notebook, token-subsequence
+                                masking, hard pre-flight assertion)
+Eval harness Mark-0 blind spot : FIXED (extract_all_elements + gt_mark split)
+eval_baseline.json (1.7%)   : SUPERSEDED by eval_baseline_v2.json (0.0%)
+Smoke test (200 pages)      : COMPLETE — 27.5% overall, 22.6% on gt_mark!=0
+                                (collapse fix CONFIRMED)
+Full retrain (728 pages)    : COMPLETE (training) — eval PENDING
+lora_adapter_v2/            : trained, not yet evaluated
+```
+
+---
+
+## Next
+
+1. Run `eval.py --mode finetuned --adapter models/lora_adapter_v2
+   --max-samples 200 --name full_finetuned` and
+   `eval.py --mode compare --baseline-json results/eval_baseline_v2.json
+   --finetuned-json results/eval_full_finetuned.json`.
+2. Record the full-run numbers here and in schemas.md's Results table.
+3. Prepare demo: 2-3 fixed tasks/sites, rehearse end-to-end multiple
+   times, record a backup run.
+4. Presentation framing: root cause (merged-mega-turn data) → fix
+   (per-element turn-pairs + multi-turn training) → controlled evidence
+   (gt_mark==0 vs !=0 split, not just an aggregate accuracy number) →
+   explicit scoping note (grounding subtask only; bbox_to_text/
+   point_to_text out of scope, flagged as future work).
+5. Magma-8B reference numbers (cite paper-reported figures if a live
+   Kaggle eval doesn't fit the remaining time budget — label clearly as
+   "as reported by the authors", not reproduced).
+6. Statistical validation pass on conversations.jsonl (still open from
+   the previous session, not blocking).

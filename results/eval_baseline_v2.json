@@ -1,0 +1,2498 @@
+{
+  "run": "baseline_v2",
+  "mode": "baseline",
+  "n_evaluated": 80,
+  "n_skipped": 20,
+  "click_accuracy": 0.0,
+  "iou_hit_50": 0.0,
+  "mean_iou": 0.0036,
+  "mean_dist_to_gt": 0.3572,
+  "no_pred": 2,
+  "mean_time_s": 17.4,
+  "click_acc_gt_mark_0": 0.0,
+  "click_acc_gt_mark_non0": 0.0,
+  "by_task": {
+    "text_to_bbox": {
+      "n": 45,
+      "click_acc": 0.0,
+      "iou_hit_50": 0.0,
+      "mean_iou": 0.0055,
+      "mean_dist": 0.3319,
+      "no_pred": 1
+    },
+    "text_to_point": {
+      "n": 35,
+      "click_acc": 0.0,
+      "iou_hit_50": 0.0,
+      "mean_iou": 0.0012,
+      "mean_dist": 0.3899,
+      "no_pred": 1
+    }
+  },
+  "samples": [
+    {
+      "sample_id": 0,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "here",
+      "gt_bbox": [
+        0.57,
+        0.4,
+        0.59,
+        0.41
+      ],
+      "gt_mark": 12,
+      "pred_mark": null,
+      "pred_point": [
+        0.225,
+        0.17777777777777778
+      ],
+      "pred_bbox": [
+        0.1921875,
+        0.17314814814814813,
+        0.2578125,
+        0.1824074074074074
+      ],
+      "raw_response": "(369,187,495,197)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4214913264488428,
+      "elapsed_s": 24.34511685371399
+    },
+    {
+      "sample_id": 2,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Agricultural irrigation",
+      "gt_bbox": [
+        0.34,
+        0.92,
+        0.41,
+        0.94
+      ],
+      "gt_mark": 33,
+      "pred_mark": null,
+      "pred_point": [
+        0.437,
+        0.2235
+      ],
+      "pred_bbox": [
+        0.375,
+        0.187,
+        0.499,
+        0.26
+      ],
+      "raw_response": "(0.375, 0.187, 0.499, 0.26)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.7092152353129477,
+      "elapsed_s": 17.087291955947876
+    },
+    {
+      "sample_id": 3,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "twitter",
+      "gt_bbox": [
+        0.76,
+        0.02,
+        0.77,
+        0.04
+      ],
+      "gt_mark": 15,
+      "pred_mark": null,
+      "pred_point": [
+        0.87,
+        0.20500000000000002
+      ],
+      "pred_bbox": [
+        0.75,
+        0.18,
+        0.99,
+        0.23
+      ],
+      "raw_response": "(0.75, 0.18, 0.99, 0.23)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.20408331631958554,
+      "elapsed_s": 17.375115394592285
+    },
+    {
+      "sample_id": 4,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Nous joindre\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.5598958333333334,
+        0.125,
+        0.6177083333333333,
+        0.16203703703703703
+      ],
+      "gt_mark": 3,
+      "pred_mark": null,
+      "pred_point": [
+        0.21380208333333334,
+        0.06620370370370371
+      ],
+      "pred_bbox": [
+        0.20520833333333333,
+        0.06018518518518518,
+        0.22239583333333332,
+        0.07222222222222222
+      ],
+      "raw_response": "Coordinate: (394, 65, 427, 78)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.38288716430542447,
+      "elapsed_s": 17.10473942756653
+    },
+    {
+      "sample_id": 5,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "RADIO KREIZ BREIZH\nTechnicien.ne\nMi-temps",
+      "gt_bbox": [
+        0.24,
+        0.83,
+        0.42,
+        0.9
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.43,
+        0.7250000000000001
+      ],
+      "pred_bbox": [
+        0.37,
+        0.65,
+        0.49,
+        0.8
+      ],
+      "raw_response": "(0.37, 0.65, 0.49, 0.8)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.17204650534085247,
+      "elapsed_s": 17.121023178100586
+    },
+    {
+      "sample_id": 7,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"8 Luxury Car Rental Companies Worth Booking\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.025,
+        0.6435185185185185,
+        0.18645833333333334,
+        0.6592592592592592
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.18307291666666667,
+        0.29074074074074074
+      ],
+      "pred_bbox": [
+        0.18072916666666666,
+        0.2861111111111111,
+        0.18541666666666667,
+        0.2953703703703704
+      ],
+      "raw_response": "Coordinate: (347, 309, 356, 319)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3688484003310182,
+      "elapsed_s": 16.7621488571167
+    },
+    {
+      "sample_id": 8,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Horaires",
+      "gt_bbox": [
+        0.52,
+        0.0,
+        0.63,
+        0.11
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.20052083333333334,
+        0.04212962962962963
+      ],
+      "pred_bbox": [
+        0.184375,
+        0.03611111111111111,
+        0.21666666666666667,
+        0.04814814814814815
+      ],
+      "raw_response": "(354, 39, 416, 52)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.37470027048406507,
+      "elapsed_s": 16.863295316696167
+    },
+    {
+      "sample_id": 9,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "HOME",
+      "gt_bbox": [
+        0.0,
+        0.05,
+        0.12,
+        0.08
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.024739583333333332,
+        0.21898148148148147
+      ],
+      "pred_bbox": [
+        0.0,
+        0.0,
+        0.049479166666666664,
+        0.43796296296296294
+      ],
+      "raw_response": "(0,0,95,473 Coordinate: (0,0,95,473)",
+      "click_hit": false,
+      "iou_score": 0.062406279069201626,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.15796706499374724,
+      "elapsed_s": 17.12915325164795
+    },
+    {
+      "sample_id": 11,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"click here\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.5145833333333333,
+        0.14814814814814814,
+        0.5546875,
+        0.1675925925925926
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.20963541666666666,
+        0.06898148148148148
+      ],
+      "pred_bbox": [
+        0.18072916666666666,
+        0.06388888888888888,
+        0.23854166666666668,
+        0.07407407407407407
+      ],
+      "raw_response": "Coordinate: (347, 69, 458, 80)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3369365438296969,
+      "elapsed_s": 16.8383047580719
+    },
+    {
+      "sample_id": 12,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"SHIP DESIGN\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.39479166666666665,
+        0.027777777777777776,
+        0.46041666666666664,
+        0.06574074074074074
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.18776041666666668,
+        0.020370370370370372
+      ],
+      "pred_bbox": [
+        0.17708333333333334,
+        0.016666666666666666,
+        0.1984375,
+        0.024074074074074074
+      ],
+      "raw_response": "Coordinate: (340, 18, 381, 26)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.24129110607490825,
+      "elapsed_s": 16.905192852020264
+    },
+    {
+      "sample_id": 15,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Geri",
+      "gt_bbox": [
+        0.203125,
+        0.7453703703703703,
+        0.21875,
+        0.7824074074074074
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.33880208333333334,
+        0.3375
+      ],
+      "pred_bbox": [
+        0.3302083333333333,
+        0.33240740740740743,
+        0.34739583333333335,
+        0.3425925925925926
+      ],
+      "raw_response": "(634, 359, 667, 370)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4451481059590259,
+      "elapsed_s": 16.59985637664795
+    },
+    {
+      "sample_id": 16,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Bachelor of Health Science (Complementary Medicine)\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.40520833333333334,
+        0.5351851851851852,
+        0.6213541666666667,
+        0.5537037037037037
+      ],
+      "gt_mark": 11,
+      "pred_mark": null,
+      "pred_point": [
+        0.20364583333333333,
+        0.2791666666666667
+      ],
+      "pred_bbox": [
+        0.18072916666666666,
+        0.2611111111111111,
+        0.2265625,
+        0.2972222222222222
+      ],
+      "raw_response": "Coordinate: (347, 282, 435, 321)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4077332346486565,
+      "elapsed_s": 17.078325748443604
+    },
+    {
+      "sample_id": 17,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"CONTACT\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.4979166666666667,
+        0.12222222222222222,
+        0.5421875,
+        0.1388888888888889
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.22708333333333333,
+        0.059722222222222225
+      ],
+      "pred_bbox": [
+        0.21822916666666667,
+        0.053703703703703705,
+        0.2359375,
+        0.06574074074074074
+      ],
+      "raw_response": "Coordinate: (419, 58, 453, 71)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3014101020000385,
+      "elapsed_s": 16.845123291015625
+    },
+    {
+      "sample_id": 18,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Relooking",
+      "gt_bbox": [
+        0.58,
+        0.0,
+        0.64,
+        0.23
+      ],
+      "gt_mark": 3,
+      "pred_mark": null,
+      "pred_point": [
+        0.21197916666666666,
+        0.09722222222222222
+      ],
+      "pred_bbox": [
+        0.20520833333333333,
+        0.09259259259259259,
+        0.21875,
+        0.10185185185185185
+      ],
+      "raw_response": "(394, 100, 420, 110)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3984176616944549,
+      "elapsed_s": 17.768038511276245
+    },
+    {
+      "sample_id": 19,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Add to cart",
+      "gt_bbox": [
+        0.6088541666666667,
+        0.524074074074074,
+        0.8239583333333333,
+        0.5666666666666667
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.3140625,
+        0.2388888888888889
+      ],
+      "pred_bbox": [
+        0.2677083333333333,
+        0.23425925925925925,
+        0.36041666666666666,
+        0.24351851851851852
+      ],
+      "raw_response": "(514, 253, 692, 263)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5057780062983622,
+      "elapsed_s": 16.923202753067017
+    },
+    {
+      "sample_id": 20,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "BOOK",
+      "gt_bbox": [
+        0.71,
+        0.09,
+        0.76,
+        0.13
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.3216145833333333,
+        0.04814814814814815
+      ],
+      "pred_bbox": [
+        0.3145833333333333,
+        0.041666666666666664,
+        0.32864583333333336,
+        0.05462962962962963
+      ],
+      "raw_response": "Coordinate: (604, 45, 631, 59)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4179870264615602,
+      "elapsed_s": 17.165039539337158
+    },
+    {
+      "sample_id": 21,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Widget containing a Cloudflare security challenge",
+      "gt_bbox": [
+        0.2625,
+        0.23703703703703705,
+        0.41875,
+        0.2972222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.15026041666666667,
+        0.12037037037037036
+      ],
+      "pred_bbox": [
+        0.11614583333333334,
+        0.11018518518518519,
+        0.184375,
+        0.13055555555555556
+      ],
+      "raw_response": "(223, 119, 354, 141)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.2403683730568564,
+      "elapsed_s": 16.91927409172058
+    },
+    {
+      "sample_id": 22,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Privacy Policy\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.340625,
+        0.25555555555555554,
+        0.39375,
+        0.2833333333333333
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.21744791666666666,
+        0.11990740740740741
+      ],
+      "pred_bbox": [
+        0.20729166666666668,
+        0.11481481481481481,
+        0.22760416666666666,
+        0.125
+      ],
+      "raw_response": "Coordinate: (398, 124, 437, 135)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.21162057617976676,
+      "elapsed_s": 16.81927800178528
+    },
+    {
+      "sample_id": 23,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Privacy Policy\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.6677083333333333,
+        0.8953703703703704,
+        0.7151041666666667,
+        0.9157407407407407
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.22213541666666667,
+        0.1986111111111111
+      ],
+      "pred_bbox": [
+        0.1859375,
+        0.1935185185185185,
+        0.25833333333333336,
+        0.2037037037037037
+      ],
+      "raw_response": "Coordinate: (357, 209, 496, 220)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.8485196300311652,
+      "elapsed_s": 17.186023473739624
+    },
+    {
+      "sample_id": 26,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "ACCESS STAIRS, PLATFORMS AND MACHINE GUARDS",
+      "gt_bbox": [
+        0.41,
+        0.77,
+        0.58,
+        0.85
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.13619791666666667,
+        0.37175925925925923
+      ],
+      "pred_bbox": [
+        0.12864583333333332,
+        0.36574074074074076,
+        0.14375,
+        0.37777777777777777
+      ],
+      "raw_response": "(247, 395, 276, 408)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5663866893292369,
+      "elapsed_s": 17.01949906349182
+    },
+    {
+      "sample_id": 27,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Contact your hosting provider",
+      "gt_bbox": [
+        0.16041666666666668,
+        0.2,
+        0.3125,
+        0.22314814814814815
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.10338541666666666,
+        0.09444444444444444
+      ],
+      "pred_bbox": [
+        0.07135416666666666,
+        0.08888888888888889,
+        0.13541666666666666,
+        0.1
+      ],
+      "raw_response": "(137, 96, 260, 108)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.17727873896028204,
+      "elapsed_s": 16.650816917419434
+    },
+    {
+      "sample_id": 28,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "WebMaster",
+      "gt_bbox": [
+        0.36,
+        0.17,
+        0.41,
+        0.19
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.16848958333333333,
+        0.08009259259259259
+      ],
+      "pred_bbox": [
+        0.15885416666666666,
+        0.07592592592592592,
+        0.178125,
+        0.08425925925925926
+      ],
+      "raw_response": "Coordinate: (305, 82, 342, 91)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.23844968144252845,
+      "elapsed_s": 17.118789196014404
+    },
+    {
+      "sample_id": 29,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Contact\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.04583333333333333,
+        0.19814814814814816,
+        0.071875,
+        0.21388888888888888
+      ],
+      "gt_mark": 9,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": true,
+      "dist_to_gt": null,
+      "elapsed_s": 19.009498596191406
+    },
+    {
+      "sample_id": 30,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"ASSOCIATION\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.6161458333333333,
+        0.07037037037037037,
+        0.6822916666666666,
+        0.09537037037037037
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.28671875,
+        0.03657407407407407
+      ],
+      "pred_bbox": [
+        0.278125,
+        0.03333333333333333,
+        0.2953125,
+        0.03981481481481482
+      ],
+      "raw_response": "Coordinate: (534, 36, 567, 43)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.365444382978798,
+      "elapsed_s": 17.04191303253174
+    },
+    {
+      "sample_id": 31,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "info@captaintouch.be",
+      "gt_bbox": [
+        0.4630208333333333,
+        0.5537037037037037,
+        0.5364583333333334,
+        0.5694444444444444
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.21953125,
+        0.2212962962962963
+      ],
+      "pred_bbox": [
+        0.1796875,
+        0.13518518518518519,
+        0.259375,
+        0.3074074074074074
+      ],
+      "raw_response": "(345, 146, 498, 332)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4408011752693351,
+      "elapsed_s": 17.18639612197876
+    },
+    {
+      "sample_id": 32,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "OVHcloud Recrute",
+      "gt_bbox": [
+        0.63,
+        0.78,
+        0.67,
+        0.79
+      ],
+      "gt_mark": 6,
+      "pred_mark": null,
+      "pred_point": [
+        0.745,
+        0.9
+      ],
+      "pred_bbox": [
+        0.5,
+        0.87,
+        0.99,
+        0.93
+      ],
+      "raw_response": "(0.5, 0.87, 0.99, 0.93)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.14916433890176295,
+      "elapsed_s": 17.390949010849
+    },
+    {
+      "sample_id": 34,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "zolotze | 2009-09-11 09:19:22",
+      "gt_bbox": [
+        0.27,
+        0.33,
+        0.34,
+        0.36
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.64,
+        0.515
+      ],
+      "pred_bbox": [
+        0.5,
+        0.43,
+        0.78,
+        0.6
+      ],
+      "raw_response": "(0.5, 0.43, 0.78, 0.6)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3756660751252367,
+      "elapsed_s": 17.644070386886597
+    },
+    {
+      "sample_id": 35,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Privacy Policy",
+      "gt_bbox": [
+        0.4859375,
+        0.7453703703703703,
+        0.5145833333333333,
+        0.7546296296296297
+      ],
+      "gt_mark": 5,
+      "pred_mark": null,
+      "pred_point": [
+        0.21796875,
+        0.23703703703703705
+      ],
+      "pred_bbox": [
+        0.1859375,
+        0.23055555555555557,
+        0.25,
+        0.24351851851851852
+      ],
+      "raw_response": "(357, 249, 480, 263)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5855079729954038,
+      "elapsed_s": 17.250301837921143
+    },
+    {
+      "sample_id": 36,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Morningstar",
+      "gt_bbox": [
+        0.2,
+        0.01,
+        0.32,
+        0.06
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.1140625,
+        0.01712962962962963
+      ],
+      "pred_bbox": [
+        0.09010416666666667,
+        0.008333333333333333,
+        0.13802083333333334,
+        0.025925925925925925
+      ],
+      "raw_response": "Coordinate: (173, 9, 265, 28)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.14702756218962557,
+      "elapsed_s": 16.77309226989746
+    },
+    {
+      "sample_id": 37,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "office@vsepamyatniki.by",
+      "gt_bbox": [
+        0.56,
+        0.0,
+        0.65,
+        0.02
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.2669270833333333,
+        0.008333333333333333
+      ],
+      "pred_bbox": [
+        0.24791666666666667,
+        0.004629629629629629,
+        0.2859375,
+        0.012037037037037037
+      ],
+      "raw_response": "(476, 5, 549, 13)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3380770248941574,
+      "elapsed_s": 16.64950728416443
+    },
+    {
+      "sample_id": 38,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "My Blog",
+      "gt_bbox": [
+        0.3255208333333333,
+        0.041666666666666664,
+        0.38177083333333334,
+        0.07222222222222222
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.19375,
+        0.07546296296296297
+      ],
+      "pred_bbox": [
+        0.14322916666666666,
+        0.0,
+        0.24427083333333333,
+        0.15092592592592594
+      ],
+      "raw_response": "Coordinate: (275, 0, 469, 163)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.16096463290264051,
+      "elapsed_s": 17.01811933517456
+    },
+    {
+      "sample_id": 40,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Produkte",
+      "gt_bbox": [
+        0.03,
+        0.09,
+        0.06,
+        0.1
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.025,
+        0.04814814814814815
+      ],
+      "pred_bbox": [
+        0.0203125,
+        0.04259259259259259,
+        0.0296875,
+        0.053703703703703705
+      ],
+      "raw_response": "(39,46,57,58)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.05094208497841322,
+      "elapsed_s": 16.33028745651245
+    },
+    {
+      "sample_id": 41,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Contact\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.7484375,
+        0.030555555555555555,
+        0.78125,
+        0.07407407407407407
+      ],
+      "gt_mark": 3,
+      "pred_mark": null,
+      "pred_point": [
+        0.3111979166666667,
+        0.2152777777777778
+      ],
+      "pred_bbox": [
+        0.2796875,
+        0.11481481481481481,
+        0.34270833333333334,
+        0.31574074074074077
+      ],
+      "raw_response": "Coordinate: (537, 124, 658, 341)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.48202849438426615,
+      "elapsed_s": 18.11122751235962
+    },
+    {
+      "sample_id": 42,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "MENU",
+      "gt_bbox": [
+        0.73,
+        0.01,
+        0.75,
+        0.18
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.5449999999999999,
+        0.475
+      ],
+      "pred_bbox": [
+        0.5,
+        0.47,
+        0.59,
+        0.48
+      ],
+      "raw_response": "(0.5, 0.47, 0.59, 0.48)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.42711239738504436,
+      "elapsed_s": 17.713680028915405
+    },
+    {
+      "sample_id": 43,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"HOME\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.24166666666666667,
+        0.24074074074074073,
+        0.28229166666666666,
+        0.27870370370370373
+      ],
+      "gt_mark": 5,
+      "pred_mark": null,
+      "pred_point": [
+        0.11328125,
+        0.11435185185185186
+      ],
+      "pred_bbox": [
+        0.10677083333333333,
+        0.10925925925925926,
+        0.11979166666666667,
+        0.11944444444444445
+      ],
+      "raw_response": "Coordinate: (205, 118, 230, 129)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.20795099182890567,
+      "elapsed_s": 17.200407028198242
+    },
+    {
+      "sample_id": 45,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Got it!",
+      "gt_bbox": [
+        0.9135416666666667,
+        0.9546296296296296,
+        0.9760416666666667,
+        0.9851851851851852
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.21875,
+        0.23333333333333334
+      ],
+      "pred_bbox": [
+        0.0,
+        0.0,
+        0.4375,
+        0.4666666666666667
+      ],
+      "raw_response": "(0.0, 0.0, 840.0, 504.0)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 1.0342523233400014,
+      "elapsed_s": 17.351224184036255
+    },
+    {
+      "sample_id": 46,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "free Under Construction Page plugin for WordPress",
+      "gt_bbox": [
+        0.49,
+        0.73,
+        0.65,
+        0.74
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.203125,
+        0.32407407407407407
+      ],
+      "pred_bbox": [
+        0.15625,
+        0.32407407407407407,
+        0.25,
+        0.32407407407407407
+      ],
+      "raw_response": "(300, 350, 480, 350)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5508696599224535,
+      "elapsed_s": 17.095853090286255
+    },
+    {
+      "sample_id": 47,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "+375 (29) 105-20-08",
+      "gt_bbox": [
+        0.58,
+        0.03,
+        0.66,
+        0.05
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.26979166666666665,
+        0.01712962962962963
+      ],
+      "pred_bbox": [
+        0.253125,
+        0.012962962962962963,
+        0.2864583333333333,
+        0.021296296296296296
+      ],
+      "raw_response": "(486, 14, 550, 23)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3509543140880149,
+      "elapsed_s": 16.945733308792114
+    },
+    {
+      "sample_id": 48,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Cloudflare",
+      "gt_bbox": [
+        0.53,
+        0.97,
+        0.57,
+        0.98
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.18229166666666666,
+        0.33611111111111114
+      ],
+      "pred_bbox": [
+        0.11458333333333333,
+        0.33055555555555555,
+        0.25,
+        0.3416666666666667
+      ],
+      "raw_response": "(220, 357, 480, 369)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.7371488525043343,
+      "elapsed_s": 17.885334491729736
+    },
+    {
+      "sample_id": 50,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Current Vacancies",
+      "gt_bbox": [
+        0.63,
+        0.09,
+        0.7,
+        0.11
+      ],
+      "gt_mark": 10,
+      "pred_mark": null,
+      "pred_point": [
+        0.5249999999999999,
+        0.42500000000000004
+      ],
+      "pred_bbox": [
+        0.47,
+        0.39,
+        0.58,
+        0.46
+      ],
+      "raw_response": "(0.47, 0.39, 0.58, 0.46)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.35387144558441,
+      "elapsed_s": 17.533634662628174
+    },
+    {
+      "sample_id": 51,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Widget containing a Cloudflare security challenge",
+      "gt_bbox": [
+        0.26,
+        0.24,
+        0.42,
+        0.3
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.14947916666666666,
+        0.11944444444444445
+      ],
+      "pred_bbox": [
+        0.11458333333333333,
+        0.10925925925925926,
+        0.184375,
+        0.12962962962962962
+      ],
+      "raw_response": "(220, 118, 354, 140)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.24282743511117055,
+      "elapsed_s": 17.829074382781982
+    },
+    {
+      "sample_id": 52,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Brasserie de l'Abbaye du Val-Dieu",
+      "gt_bbox": [
+        0.29,
+        0.15,
+        0.36,
+        0.21
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.19244791666666666,
+        0.20694444444444443
+      ],
+      "pred_bbox": [
+        0.13177083333333334,
+        0.07222222222222222,
+        0.253125,
+        0.3416666666666667
+      ],
+      "raw_response": "(253, 78, 486, 369)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.13526292131410841,
+      "elapsed_s": 17.025182008743286
+    },
+    {
+      "sample_id": 53,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "2022",
+      "gt_bbox": [
+        0.38,
+        0.27,
+        0.4,
+        0.28
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.15546875,
+        0.16666666666666666
+      ],
+      "pred_bbox": [
+        0.14739583333333334,
+        0.16111111111111112,
+        0.16354166666666667,
+        0.17222222222222222
+      ],
+      "raw_response": "(283, 174, 314, 186)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.25834283101660405,
+      "elapsed_s": 17.588735818862915
+    },
+    {
+      "sample_id": 54,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "UNSER ANGEBOT",
+      "gt_bbox": [
+        0.47,
+        0.02,
+        0.56,
+        0.04
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.665,
+        0.185
+      ],
+      "pred_bbox": [
+        0.5,
+        0.17,
+        0.83,
+        0.2
+      ],
+      "raw_response": "(0.5, 0.17, 0.83, 0.2)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.21569654610122993,
+      "elapsed_s": 17.272977113723755
+    },
+    {
+      "sample_id": 56,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "HOME",
+      "gt_bbox": [
+        0.7541666666666667,
+        0.013888888888888888,
+        0.7927083333333333,
+        0.05925925925925926
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.75,
+        0.5
+      ],
+      "pred_bbox": [
+        0.5,
+        0.5,
+        1.0,
+        0.5
+      ],
+      "raw_response": "(0.5, 0.5, 1.0, 0.5)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.46401821648137026,
+      "elapsed_s": 16.854597568511963
+    },
+    {
+      "sample_id": 58,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Subscribe\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.7541666666666667,
+        0.36944444444444446,
+        0.8223958333333333,
+        0.4083333333333333
+      ],
+      "gt_mark": 9,
+      "pred_mark": null,
+      "pred_point": [
+        0.346875,
+        0.1712962962962963
+      ],
+      "pred_bbox": [
+        0.3380208333333333,
+        0.16666666666666666,
+        0.35572916666666665,
+        0.17592592592592593
+      ],
+      "raw_response": "Coordinate: (649, 180, 683, 190)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.49212398223438425,
+      "elapsed_s": 17.416006565093994
+    },
+    {
+      "sample_id": 59,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Click to reveal",
+      "gt_bbox": [
+        0.4942708333333333,
+        0.8851851851851852,
+        0.5369791666666667,
+        0.9037037037037037
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.19401041666666666,
+        0.3925925925925926
+      ],
+      "pred_bbox": [
+        0.15260416666666668,
+        0.38981481481481484,
+        0.23541666666666666,
+        0.39537037037037037
+      ],
+      "raw_response": "(293, 421, 452, 427)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5960631018774829,
+      "elapsed_s": 17.08215856552124
+    },
+    {
+      "sample_id": 60,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Accept\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.026041666666666668,
+        0.9231481481481482,
+        0.057291666666666664,
+        0.9518518518518518
+      ],
+      "gt_mark": 3,
+      "pred_mark": null,
+      "pred_point": [
+        0.22369791666666666,
+        0.43287037037037035
+      ],
+      "pred_bbox": [
+        0.19739583333333333,
+        0.4305555555555556,
+        0.25,
+        0.4351851851851852
+      ],
+      "raw_response": "Coordinate: (379, 465, 480, 470)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5364573040575548,
+      "elapsed_s": 17.17418336868286
+    },
+    {
+      "sample_id": 61,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Accueil",
+      "gt_bbox": [
+        0.03,
+        0.7,
+        0.05,
+        0.72
+      ],
+      "gt_mark": 17,
+      "pred_mark": null,
+      "pred_point": [
+        0.21875,
+        0.1736111111111111
+      ],
+      "pred_bbox": [
+        0.0,
+        0.0,
+        0.4375,
+        0.3472222222222222
+      ],
+      "raw_response": "(0.0, 0.0, 840.0, 375.0)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5653888950301877,
+      "elapsed_s": 17.52022647857666
+    },
+    {
+      "sample_id": 62,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Online Services\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.4864583333333333,
+        0.09074074074074075,
+        0.5458333333333333,
+        0.12314814814814815
+      ],
+      "gt_mark": 3,
+      "pred_mark": null,
+      "pred_point": [
+        0.18567708333333333,
+        0.049074074074074076
+      ],
+      "pred_bbox": [
+        0.1796875,
+        0.04351851851851852,
+        0.19166666666666668,
+        0.05462962962962963
+      ],
+      "raw_response": "Coordinate: (345, 47, 368, 59)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.33549750296144726,
+      "elapsed_s": 19.03568959236145
+    },
+    {
+      "sample_id": 63,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "tony@forsterestuarycharters.com.au",
+      "gt_bbox": [
+        0.36041666666666666,
+        0.006481481481481481,
+        0.48020833333333335,
+        0.022222222222222223
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.54,
+        0.185
+      ],
+      "pred_bbox": [
+        0.45,
+        0.17,
+        0.63,
+        0.2
+      ],
+      "raw_response": "(0.45, 0.17, 0.63, 0.2)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.2084367724818304,
+      "elapsed_s": 17.230539798736572
+    },
+    {
+      "sample_id": 64,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "greenphoneicon",
+      "gt_bbox": [
+        0.9,
+        0.02,
+        0.91,
+        0.04
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.625,
+        0.5449999999999999
+      ],
+      "pred_bbox": [
+        0.5,
+        0.49,
+        0.75,
+        0.6
+      ],
+      "raw_response": "(0.5, 0.49, 0.75, 0.6)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.5861953599270467,
+      "elapsed_s": 17.213518857955933
+    },
+    {
+      "sample_id": 66,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Contact Us\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.7229166666666667,
+        0.1685185185185185,
+        0.7901041666666667,
+        0.20555555555555555
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.33098958333333334,
+        0.08287037037037037
+      ],
+      "pred_bbox": [
+        0.31979166666666664,
+        0.07685185185185185,
+        0.3421875,
+        0.08888888888888889
+      ],
+      "raw_response": "Coordinate: (614, 83, 657, 96)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.43808523605017663,
+      "elapsed_s": 17.324385166168213
+    },
+    {
+      "sample_id": 67,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "WAREHOUSE SALE",
+      "gt_bbox": [
+        0.65,
+        0.03,
+        0.74,
+        0.17
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.30364583333333334,
+        0.04675925925925926
+      ],
+      "pred_bbox": [
+        0.2859375,
+        0.03981481481481482,
+        0.32135416666666666,
+        0.053703703703703705
+      ],
+      "raw_response": "(549, 43, 617, 58)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.39495906147597615,
+      "elapsed_s": 19.172879695892334
+    },
+    {
+      "sample_id": 69,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "ABOUT US",
+      "gt_bbox": [
+        0.41,
+        0.1,
+        0.46,
+        0.13
+      ],
+      "gt_mark": 5,
+      "pred_mark": null,
+      "pred_point": [
+        0.19140625,
+        0.05138888888888889
+      ],
+      "pred_bbox": [
+        0.18177083333333333,
+        0.046296296296296294,
+        0.20104166666666667,
+        0.05648148148148148
+      ],
+      "raw_response": "(349,50,386,61)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.25176236513000233,
+      "elapsed_s": 16.8658447265625
+    },
+    {
+      "sample_id": 70,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "WHAT'S ON",
+      "gt_bbox": [
+        0.29,
+        0.11,
+        0.35,
+        0.15
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": null,
+      "pred_bbox": null,
+      "raw_response": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": true,
+      "dist_to_gt": null,
+      "elapsed_s": 18.127354383468628
+    },
+    {
+      "sample_id": 71,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Got it!",
+      "gt_bbox": [
+        0.94,
+        0.96,
+        0.98,
+        0.99
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.21848958333333332,
+        0.22037037037037038
+      ],
+      "pred_bbox": [
+        0.0,
+        0.0,
+        0.43697916666666664,
+        0.44074074074074077
+      ],
+      "raw_response": "(0,0,839,476)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 1.0579714438207324,
+      "elapsed_s": 16.30844783782959
+    },
+    {
+      "sample_id": 72,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Home",
+      "gt_bbox": [
+        0.3,
+        0.23,
+        0.34,
+        0.26
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.22916666666666666,
+        0.18333333333333332
+      ],
+      "pred_bbox": [
+        0.20520833333333333,
+        0.14537037037037037,
+        0.253125,
+        0.2212962962962963
+      ],
+      "raw_response": "(394, 157, 486, 239)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.10978830640019102,
+      "elapsed_s": 19.05898690223694
+    },
+    {
+      "sample_id": 73,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"SEARCH\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.7697916666666667,
+        0.20833333333333334,
+        0.8088541666666667,
+        0.2490740740740741
+      ],
+      "gt_mark": 10,
+      "pred_mark": null,
+      "pred_point": [
+        0.34609375,
+        0.10277777777777777
+      ],
+      "pred_bbox": [
+        0.34010416666666665,
+        0.0962962962962963,
+        0.35208333333333336,
+        0.10925925925925926
+      ],
+      "raw_response": "Coordinate: (653, 104, 676, 118)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.46077047757460504,
+      "elapsed_s": 18.973803997039795
+    },
+    {
+      "sample_id": 75,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Zywilson",
+      "gt_bbox": [
+        0.64,
+        0.47,
+        0.66,
+        0.48
+      ],
+      "gt_mark": 3,
+      "pred_mark": null,
+      "pred_point": [
+        0.53,
+        0.515
+      ],
+      "pred_bbox": [
+        0.37,
+        0.45,
+        0.69,
+        0.58
+      ],
+      "raw_response": "(0.37, 0.45, 0.69, 0.58)",
+      "click_hit": false,
+      "iou_score": 0.004807692307692319,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.1264911064067352,
+      "elapsed_s": 17.1696515083313
+    },
+    {
+      "sample_id": 76,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "CONTACT",
+      "gt_bbox": [
+        0.89,
+        0.02,
+        0.93,
+        0.04
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.34140625,
+        0.000462962962962963
+      ],
+      "pred_bbox": [
+        0.3328125,
+        0.0,
+        0.35,
+        0.000925925925925926
+      ],
+      "raw_response": "(639, 0, 672, 1)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.569360421083157,
+      "elapsed_s": 16.50596308708191
+    },
+    {
+      "sample_id": 77,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "LEARN MORE",
+      "gt_bbox": [
+        0.6104166666666667,
+        0.4722222222222222,
+        0.7026041666666667,
+        0.5092592592592593
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.28515625,
+        0.2162037037037037
+      ],
+      "pred_bbox": [
+        0.2703125,
+        0.2101851851851852,
+        0.3,
+        0.2222222222222222
+      ],
+      "raw_response": "(519, 227, 576, 240)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4618165239635432,
+      "elapsed_s": 16.800966501235962
+    },
+    {
+      "sample_id": 78,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "OVHcloud",
+      "gt_bbox": [
+        0.42,
+        0.06,
+        0.58,
+        0.07
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.2716145833333333,
+        0.24027777777777778
+      ],
+      "pred_bbox": [
+        0.1796875,
+        0.1175925925925926,
+        0.36354166666666665,
+        0.362962962962963
+      ],
+      "raw_response": "(345, 127, 698, 392)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.2878926847433311,
+      "elapsed_s": 18.852178812026978
+    },
+    {
+      "sample_id": 79,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "Home",
+      "gt_bbox": [
+        0.025,
+        0.05555555555555555,
+        0.0453125,
+        0.0712962962962963
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.015625,
+        0.029166666666666667
+      ],
+      "pred_bbox": [
+        0.011979166666666667,
+        0.025925925925925925,
+        0.019270833333333334,
+        0.032407407407407406
+      ],
+      "raw_response": "Coordinate: (23, 28, 37, 35)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.0394356003067741,
+      "elapsed_s": 17.192959785461426
+    },
+    {
+      "sample_id": 80,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "contact us",
+      "gt_bbox": [
+        0.47,
+        0.27,
+        0.51,
+        0.29
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.18828125,
+        0.12314814814814815
+      ],
+      "pred_bbox": [
+        0.14739583333333334,
+        0.1175925925925926,
+        0.22916666666666666,
+        0.1287037037037037
+      ],
+      "raw_response": "(283,127,440,139)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.34005397737847115,
+      "elapsed_s": 16.777446746826172
+    },
+    {
+      "sample_id": 81,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Iveco",
+      "gt_bbox": [
+        0.68,
+        0.86,
+        0.7,
+        0.88
+      ],
+      "gt_mark": 7,
+      "pred_mark": null,
+      "pred_point": [
+        0.745,
+        0.9
+      ],
+      "pred_bbox": [
+        0.5,
+        0.87,
+        0.99,
+        0.93
+      ],
+      "raw_response": "(0.5, 0.87, 0.99, 0.93)",
+      "click_hit": false,
+      "iou_score": 0.006756756756756726,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.0626498204307084,
+      "elapsed_s": 18.969606399536133
+    },
+    {
+      "sample_id": 82,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Website Makeover",
+      "gt_bbox": [
+        0.03,
+        0.15,
+        0.09,
+        0.17
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.03125,
+        0.07083333333333333
+      ],
+      "pred_bbox": [
+        0.024479166666666666,
+        0.06759259259259259,
+        0.03802083333333333,
+        0.07407407407407407
+      ],
+      "raw_response": "Coordinate: (47, 73, 73, 80)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.09368701587970686,
+      "elapsed_s": 18.74136781692505
+    },
+    {
+      "sample_id": 84,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Kontakt\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.10729166666666666,
+        0.019444444444444445,
+        0.1328125,
+        0.03518518518518519
+      ],
+      "gt_mark": 20,
+      "pred_mark": null,
+      "pred_point": [
+        0.027864583333333335,
+        0.08425925925925926
+      ],
+      "pred_bbox": [
+        0.022395833333333334,
+        0.0787037037037037,
+        0.03333333333333333,
+        0.08981481481481482
+      ],
+      "raw_response": "Coordinate: (43, 85, 64, 97)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.10835684062086906,
+      "elapsed_s": 16.74451971054077
+    },
+    {
+      "sample_id": 85,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"Kontakt\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.0625,
+        0.3990740740740741,
+        0.09947916666666666,
+        0.42314814814814816
+      ],
+      "gt_mark": 10,
+      "pred_mark": null,
+      "pred_point": [
+        0.035416666666666666,
+        0.18518518518518517
+      ],
+      "pred_bbox": [
+        0.027604166666666666,
+        0.17962962962962964,
+        0.043229166666666666,
+        0.19074074074074074
+      ],
+      "raw_response": "Coordinate: (53, 194, 83, 206)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.2304764949815792,
+      "elapsed_s": 16.994397163391113
+    },
+    {
+      "sample_id": 86,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "FAQ",
+      "gt_bbox": [
+        0.13,
+        0.08,
+        0.16,
+        0.12
+      ],
+      "gt_mark": 4,
+      "pred_mark": null,
+      "pred_point": [
+        0.06328125,
+        0.044444444444444446
+      ],
+      "pred_bbox": [
+        0.0609375,
+        0.03981481481481482,
+        0.065625,
+        0.049074074074074076
+      ],
+      "raw_response": "(117, 43, 126, 53)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.0988148463271027,
+      "elapsed_s": 16.716200351715088
+    },
+    {
+      "sample_id": 87,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "A PROPOS",
+      "gt_bbox": [
+        0.51,
+        0.04,
+        0.55,
+        0.06
+      ],
+      "gt_mark": 3,
+      "pred_mark": null,
+      "pred_point": [
+        0.20963541666666666,
+        0.02546296296296296
+      ],
+      "pred_bbox": [
+        0.18072916666666666,
+        0.017592592592592594,
+        0.23854166666666668,
+        0.03333333333333333
+      ],
+      "raw_response": "(347, 19, 458, 36)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.32130286715324724,
+      "elapsed_s": 17.926459074020386
+    },
+    {
+      "sample_id": 89,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Facebook",
+      "gt_bbox": [
+        0.03,
+        0.52,
+        0.22,
+        0.53
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.01875,
+        0.23194444444444445
+      ],
+      "pred_bbox": [
+        0.011979166666666667,
+        0.22685185185185186,
+        0.025520833333333333,
+        0.23703703703703705
+      ],
+      "raw_response": "(23,245,49,256)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.3117220254360851,
+      "elapsed_s": 16.89642858505249
+    },
+    {
+      "sample_id": 91,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Electronics",
+      "gt_bbox": [
+        0.22,
+        0.13,
+        0.26,
+        0.15
+      ],
+      "gt_mark": 11,
+      "pred_mark": null,
+      "pred_point": [
+        0.10442708333333334,
+        0.06157407407407407
+      ],
+      "pred_bbox": [
+        0.09583333333333334,
+        0.05555555555555555,
+        0.11302083333333333,
+        0.06759259259259259
+      ],
+      "raw_response": "(184, 60, 217, 73)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.1566226088112625,
+      "elapsed_s": 16.891876935958862
+    },
+    {
+      "sample_id": 92,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"info@metalroof.by\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.75,
+        0.06296296296296296,
+        0.8192708333333333,
+        0.0824074074074074
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.36796875,
+        0.034722222222222224
+      ],
+      "pred_bbox": [
+        0.36354166666666665,
+        0.03148148148148148,
+        0.3723958333333333,
+        0.03796296296296296
+      ],
+      "raw_response": "Coordinate: (698, 34, 715, 41)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4183925162667688,
+      "elapsed_s": 16.790636777877808
+    },
+    {
+      "sample_id": 93,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "+375(29)184-77-88",
+      "gt_bbox": [
+        0.63125,
+        0.03333333333333333,
+        0.7052083333333333,
+        0.04814814814814815
+      ],
+      "gt_mark": 0,
+      "pred_mark": null,
+      "pred_point": [
+        0.8,
+        0.025
+      ],
+      "pred_bbox": [
+        0.61,
+        0.01,
+        0.99,
+        0.04
+      ],
+      "raw_response": "(0.61, 0.01, 0.99, 0.04)",
+      "click_hit": false,
+      "iou_score": 0.04107898221839362,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.13270766155888794,
+      "elapsed_s": 17.289333820343018
+    },
+    {
+      "sample_id": 94,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Search",
+      "gt_bbox": [
+        0.61,
+        0.34,
+        0.65,
+        0.38
+      ],
+      "gt_mark": 11,
+      "pred_mark": null,
+      "pred_point": [
+        0.58,
+        0.365
+      ],
+      "pred_bbox": [
+        0.47,
+        0.35,
+        0.69,
+        0.38
+      ],
+      "raw_response": "(0.47, 0.35, 0.69, 0.38)",
+      "click_hit": false,
+      "iou_score": 0.17142857142857162,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.050249378105604495,
+      "elapsed_s": 17.829684734344482
+    },
+    {
+      "sample_id": 95,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "BEHANDLINGAR",
+      "gt_bbox": [
+        0.74,
+        0.01,
+        0.82,
+        0.03
+      ],
+      "gt_mark": 1,
+      "pred_mark": null,
+      "pred_point": [
+        0.3333333333333333,
+        0.000462962962962963
+      ],
+      "pred_bbox": [
+        0.3109375,
+        0.0,
+        0.35572916666666665,
+        0.000925925925925926
+      ],
+      "raw_response": "Coordinate: (597, 0, 683, 1)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.4470937339387544,
+      "elapsed_s": 16.79429864883423
+    },
+    {
+      "sample_id": 96,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"How To\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.5989583333333334,
+        0.8,
+        0.6265625,
+        0.8157407407407408
+      ],
+      "gt_mark": 27,
+      "pred_mark": null,
+      "pred_point": [
+        0.12005208333333334,
+        0.2587962962962963
+      ],
+      "pred_bbox": [
+        0.1109375,
+        0.2537037037037037,
+        0.12916666666666668,
+        0.2638888888888889
+      ],
+      "raw_response": "Coordinate: (213, 274, 248, 285)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.7377288394501147,
+      "elapsed_s": 17.245665073394775
+    },
+    {
+      "sample_id": 98,
+      "mode": "baseline",
+      "task_type": "text_to_point",
+      "instruction": "To execute the step \"COURTESY BUS - 0477 460119\", where do I direct my attention? Please provide the coordinate and the bounding box's mark index.",
+      "gt_bbox": [
+        0.7239583333333334,
+        0.008333333333333333,
+        0.8541666666666666,
+        0.026851851851851852
+      ],
+      "gt_mark": 2,
+      "pred_mark": null,
+      "pred_point": [
+        0.3536458333333333,
+        0.04398148148148148
+      ],
+      "pred_bbox": [
+        0.33489583333333334,
+        0.03518518518518519,
+        0.3723958333333333,
+        0.05277777777777778
+      ],
+      "raw_response": "Coordinate: (643, 38, 715, 57)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.43621559700210316,
+      "elapsed_s": 16.575217962265015
+    },
+    {
+      "sample_id": 99,
+      "mode": "baseline",
+      "task_type": "text_to_bbox",
+      "instruction": "Termite Inspection",
+      "gt_bbox": [
+        0.32,
+        0.37,
+        0.38,
+        0.44
+      ],
+      "gt_mark": 6,
+      "pred_mark": null,
+      "pred_point": [
+        0.53,
+        0.475
+      ],
+      "pred_bbox": [
+        0.37,
+        0.45,
+        0.69,
+        0.5
+      ],
+      "raw_response": "(0.37, 0.45, 0.69, 0.5)",
+      "click_hit": false,
+      "iou_score": 0.0,
+      "iou_hit": false,
+      "no_pred": false,
+      "dist_to_gt": 0.1931320791582797,
+      "elapsed_s": 17.67398476600647
+    }
+  ]
+}

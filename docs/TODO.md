@@ -132,6 +132,9 @@
 - [x] Fix content_list persistence (self._last_content_list set in _run_omniparser)
 - [x] Fix VLM input always saved to /tmp/vlm_input_{tag}.png
 - [x] Tune YOLO_THRESHOLD 0.25→0.10, OCR_THRESHOLD 0.92→0.75
+- [ ] Wire up lora_adapter_v2 (post-rework adapter) once eval confirms it — was
+      DOM-priority workaround for Mark:0 bias still needed with the real fix in
+      place, or can it be simplified/removed now that root cause is fixed?
 
 ### Inference Server
 - [x] Implement src/agent/inference_server.py (FastAPI, POST /act, GET /health)
@@ -160,6 +163,9 @@
 - [x] Pass dom_elements through InferenceClient → inference server → DemoRunner
 - [x] Implement _rebuild_som_dom_priority(): DOM elements at marks 0,1,… then OmniParser
 - [x] Cap rebuilt SoM at 15 marks total
+- [ ] Re-evaluate whether DOM-priority rebuild is still needed now that the
+      root cause of Mark:0 bias (training data format) is fixed, or whether
+      it can revert to simpler mark ordering — 2026-07-02
 
 ### Evaluation
 - [x] Implement src/eval/eval.py (two modes: baseline / finetuned)
@@ -172,19 +178,40 @@
 - [x] Smoke test (10 samples)
 - [x] Run baseline evaluation (500 samples → 402 evaluated)
 - [x] Save results/eval_baseline.json  ← 1.7% click accuracy
-- [ ] Run finetuned evaluation
+      **SUPERSEDED 2026-07-02** — only ever tested Mark 0 per page (see fix below)
+- [x] Fix Mark-0 blind spot: extract_first_element only ever read convs[0:2],
+      meaning every eval ground truth was Mark 0 — a collapsed model would
+      score identically to a fixed one. Added extract_all_elements() (samples
+      any turn-pair per page) + gt_mark==0 vs gt_mark!=0 accuracy breakdown
+      (click_acc_gt_mark_0 / click_acc_gt_mark_non0 in saved JSON) — 2026-07-02
+- [x] Re-run baseline with fixed eval → results/eval_baseline_v2.json
+      (0.0% click accuracy, both gt_mark==0 and !=0) — 2026-07-02
+- [x] Run smoke-test finetuned evaluation (200 pages / 25 steps)
+      → results/eval_smoke_finetuned.json
+      27.5% overall, 37.0% gt_mark==0, 22.6% gt_mark!=0 — 2026-07-02
+      Collapse fix CONFIRMED: non-zero-mark accuracy is not near-zero.
+- [ ] Run full finetuned evaluation on lora_adapter_v2 (728-page retrain)
       python -m src.eval.eval --mode finetuned \
-        --adapter models/lora_adapter --name finetuned
-- [ ] Save results/eval_finetuned.json
-- [ ] Compute baseline → finetuned delta
+        --adapter models/lora_adapter_v2 --max-samples 200 --name full_finetuned
+- [ ] Save results/eval_full_finetuned.json
+- [ ] Run compare: baseline_v2 vs full_finetuned
+- [ ] Compute baseline → finetuned delta (using v2 numbers, not the
+      superseded 1.7%/old-finetuned pair)
 - [ ] Generate comparison table (baseline / finetuned / Magma-8B)
-- [ ] Investigate Mark:0 bias: run baseline mode on same pages and compare mark selection
-- [ ] Analyze failure cases
+- [x] Investigate Mark:0 bias — ROOT CAUSE FOUND: old training data was one
+      merged assistant turn per page listing every mark in order, always
+      starting "Mark: 0". Confirmed via old notebook's printed sample output.
+      Fixed by Phase 3 data rework (one turn-pair per element) + new
+      multi-turn training pipeline (all turn-pairs per page, not just first).
+- [ ] Analyze failure cases (once full eval numbers are in)
 - [ ] Generate qualitative examples (side-by-side baseline vs finetuned)
 
 ### Fine-tuning
 - [x] Implement src/train/finetune.py
 - [x] SoMDataset: load train.jsonl + renders, first grounding turn only
+      **Known limitation, confirmed as collapse root cause 2026-07-02** —
+      only ever training on convs[0:2] meant every page's sole training
+      target was Mark 0's (merged) answer
 - [x] SoMCollator: chat format, loss masked on user/image tokens
 - [x] Configure QLoRA (r=16, alpha=32, all linear projections)
 - [x] Configure TRL SFTTrainer
@@ -195,17 +222,41 @@
       dot-marker renders, merged mega-turn format). Treat as a "before"
       data point only; retrain on the new train.jsonl before trusting
       finetuned eval numbers.
-- [ ] Retrain QLoRA on regenerated train.jsonl (2026-07-02 rework)
-- [ ] Evaluate fine-tuned model (see Evaluation above)
-- [ ] Save results/eval_finetuned.json
+- [x] Build new Kaggle notebook cells: multi-turn-per-page dataset +
+      collator, token-subsequence label masking (offset_mapping approach
+      broke on image-token expansion, switched), hard pre-flight assertion
+      cell (fails if <2 assistant spans mask correctly) — 2026-07-02
+- [x] Run smoke test (200 pages, 25 steps, ~6 min) — validated the
+      multi-turn masking works and confirmed collapse is fixed before
+      committing to the full run — 2026-07-02
+- [x] Diagnose and fix Kaggle environment bug (transformers lazy-import
+      crash on stray tensorflow_text backend check) — clean reinstall +
+      kernel restart — 2026-07-02
+- [x] Run full retrain on all eligible (Coordinate:-containing) pages:
+      728 of 8,997 (task-type sampling means only text_to_bbox/text_to_point
+      pages qualify — matches what eval.py measures, intentional scoping,
+      not a bug) — 91 steps, ~18-20 min — 2026-07-02
+- [x] Save adapter to models/lora_adapter_v2/ — 2026-07-02
+- [ ] Evaluate models/lora_adapter_v2 (see Evaluation above) — PENDING
+- [ ] Save results/eval_full_finetuned.json
 - [ ] Compute baseline → finetuned delta
 - [ ] Generate comparison table
+- [ ] FUTURE: bbox_to_text / point_to_text subtask pages (8,269 of 8,997)
+      are currently unused by training. Would need a different loss target
+      format (free-text description, not Coordinate:/Mark:) and doesn't
+      move the grounding accuracy metric this experiment reports — explicit
+      scope decision, not a defect. Candidate follow-up experiment: does
+      adding these as an auxiliary training signal improve grounding
+      accuracy beyond grounding-only training?
 
 ### Magma Reference
 - [ ] Download Magma-8B in 4-bit on Kaggle
 - [ ] Run eval.py with MagmaBackend on val.jsonl
 - [ ] Record reference performance
 - [ ] Compare with Qwen baseline and finetuned
+- [ ] FALLBACK if time doesn't allow a live run before the demo: cite
+      paper-reported Magma-8B numbers directly, clearly labeled "as
+      reported by the authors" rather than reproduced — 2026-07-02
 
 ### Reproduction Target
 - [ ] Clarify with mentor:
@@ -241,17 +292,27 @@
 - [ ] Preprocessing benchmarks
 - [ ] Saliency scoring experiments
 - [ ] Docker containerization
+- [ ] bbox_to_text / point_to_text auxiliary training (see Fine-tuning above)
+- [ ] Mind2Web integration (deferred until current pipeline is fully
+      validated on SeeClick-Web alone — flagged in an earlier planning
+      session, not started)
 
-## Immediate Next Steps
-1. Statistical validation pass on the new conversations.jsonl (count,
-   task distribution, bbox ranges, empty-conversation detection).
-2. Retrain QLoRA on the regenerated train.jsonl (Kaggle T4) — current
-   adapter is stale, trained on pre-rework data.
-3. Run finetuned eval on local machine or Kaggle.
-4. Compute and record baseline → finetuned delta.
-5. Re-check whether the Mark:0 bias persists post-retrain (suspected root
-   cause — the old merged-mega-turn format — is now fixed).
-6. Download Magma-8B in 4-bit (Kaggle) and run reference eval.
-7. Generate comparison table: baseline / finetuned / Magma-8B.
-8. Analyze fine-tuned failure cases.
-9. Write thesis experiment section draft.
+## Immediate Next Steps (demo-focused, updated 2026-07-02)
+1. Run full finetuned eval on `models/lora_adapter_v2` (200 samples) and
+   the compare command against `eval_baseline_v2.json`.
+2. Record final numbers in devlog.md and schemas.md's Results table.
+3. Pick 2-3 fixed demo tasks/sites (ideally resembling training
+   distribution), screenshot and hand-check OmniParser coverage on those
+   exact pages ahead of time.
+4. Rehearse the full web_agent pipeline end-to-end 5-10 times on the
+   chosen tasks; record one clean backup run.
+5. Prepare the presentation narrative: root cause found (merged-mega-turn
+   training data) → fix (per-element turn-pairs + multi-turn training) →
+   controlled evidence (gt_mark==0 vs !=0 split proves it's not just
+   testing the easy case) → explicit scoping note on what's out of bounds
+   for this ablation (bbox_to_text/point_to_text, Mind2Web, full 3-epoch/
+   full-dataset retrain).
+6. Magma-8B reference: live Kaggle run if time allows, else cite paper
+   numbers clearly labeled as such.
+7. Statistical validation pass on conversations.jsonl (still open, not
+   blocking the demo).

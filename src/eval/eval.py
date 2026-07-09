@@ -25,12 +25,51 @@ Usage:
 Output:
     results/eval_baseline.json
     results/eval_finetuned.json
+
+──────────────────────────────────────────────────────────────────────────────
+PATCH NOTES (this revision):
+
+1. compare() now surfaces the gt_mark==0 vs gt_mark!=0 split in the printed
+   table. Previously these were computed and saved into the JSON summary
+   (click_acc_gt_mark_0 / click_acc_gt_mark_non0) but never displayed in
+   compare() -- meaning the actual collapse diagnostic ("does the model just
+   always predict Mark 0") was invisible in the comparison table even though
+   the data existed. A model that always predicts Mark 0 can still post a
+   decent blended click_accuracy if a meaningful fraction of ground truth
+   happens to be Mark 0 -- the blended number alone cannot tell collapse
+   apart from genuine competence.
+
+2. Per-page element sampling now seeds on the sample's image stem (a stable
+   identity) instead of its row index in val.jsonl:
+
+       OLD: random.Random(1000 + idx).choice(elems)
+       NEW: random.Random(_stable_seed(stem)).choice(elems)
+
+   idx is just "this row's position when I iterated the file this time" --
+   if val.jsonl is ever regenerated or reordered between two eval runs (this
+   project's corpus WAS regenerated mid-project), "sample #47" in one run's
+   file and "sample #47" in another run's file are not guaranteed to be the
+   same physical page. Seeding on the image filename/stem instead ties the
+   sampled element choice to the actual content, not file position, so two
+   runs against differently-ordered files are still choosing the same
+   instruction for the same page.
+
+   IMPORTANT: this changes which element gets sampled per page relative to
+   pre-patch runs. Old saved JSONs (results/eval_*.json produced before this
+   patch) remain internally valid and comparable *to each other*, since their
+   sampling was already baked in when they ran. But don't mix pre-patch and
+   post-patch runs in one compare() table -- re-run everything you want in a
+   single comparison through this patched version so the sampling is
+   consistent across the whole table.
+──────────────────────────────────────────────────────────────────────────────
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import random
 import re
 import time
 from dataclasses import dataclass, asdict
@@ -54,6 +93,18 @@ BASELINE_PROMPT = (
     "Coordinate: (x1, y1, x2, y2)\n"
     "Where x1,y1 is top-left and x2,y2 is bottom-right, all normalized 0 to 1."
 )
+
+
+def _stable_seed(key: str) -> int:
+    """
+    Deterministic seed derived from a stable identity string (e.g. image
+    stem), not from file/row position. Using a hash instead of Python's
+    built-in hash() because hash() is randomized per-process (PYTHONHASHSEED)
+    unless disabled -- md5 is deterministic across runs/machines, which is
+    what we actually need here for cross-run comparability.
+    """
+    h = hashlib.md5(key.encode("utf-8")).hexdigest()
+    return int(h[:8], 16)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -171,6 +222,71 @@ def extract_first_element(
         "gt_bbox":     gt_bbox,
         "gt_mark":     gt_mark,
     }
+
+
+def extract_all_elements(
+    sample: dict,
+    marks_path: Optional[Path] = None,
+) -> list[dict]:
+    """
+    Like extract_first_element, but returns EVERY eligible (instruction, gt)
+    pair on the page, not just the first.
+
+    Needed because the original eval only ever tested Mark 0 (convs[0:2]),
+    which structurally cannot detect "model always predicts Mark 0" collapse
+    -- ground truth was always Mark 0 too, so a collapsed model would score
+    identically to a fixed one.
+    """
+    convs = sample.get("conversations", [])
+    if len(convs) < 2:
+        return []
+
+    # Task type is a page-level property, determined by turn 0's instruction
+    # phrasing -- later turns are just the bare element label, no repeated
+    # instruction, so task_type can't be re-detected per-turn.
+    user_raw0 = convs[0]["value"]
+    user_text0 = re.sub(r"^<image>\n?", "", user_raw0).strip()
+    task_type = detect_task_type(user_text0)
+    if task_type not in ("text_to_point", "text_to_bbox"):
+        return []
+
+    elements = []
+    i = 0
+    while i + 1 < len(convs):
+        user_raw = convs[i]["value"]
+        asst_raw = convs[i + 1]["value"]
+        user_text = re.sub(r"^<image>\n?", "", user_raw).strip()
+
+        gt_bbox = _parse_gt_coords(asst_raw)
+        if gt_bbox is None:
+            i += 2
+            continue
+        gt_mark = _parse_gt_mark(asst_raw)
+        if marks_path is not None and gt_mark is not None:
+            gt_bbox = _resolve_gt_bbox(gt_bbox, gt_mark, marks_path)
+
+        if i == 0:
+            if task_type == "text_to_point":
+                full_text = " ".join(user_text.splitlines())
+                m = re.search(r'[Tt]o execute the step ["\u201c](.+?)["\u201d]', full_text)
+                instruction = m.group(1) if m else user_text.splitlines()[0]
+            else:
+                lines = [l.strip() for l in user_text.splitlines() if l.strip()]
+                instruction = lines[1] if len(lines) > 1 else lines[0]
+        else:
+            # Later turns are already just the bare element label/text --
+            # directly usable as the instruction for this subtask.
+            instruction = user_text
+
+        elements.append({
+            "task_type":   task_type,
+            "instruction": instruction,
+            "gt_bbox":     gt_bbox,
+            "gt_mark":     gt_mark,
+        })
+        i += 2
+
+    return elements
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -310,13 +426,20 @@ def run_eval(
             skipped += 1
             continue
 
-        elem = extract_first_element(
+        elems = extract_all_elements(
             sample,
             marks_path=marks_path if marks_path.exists() else None,
         )
-        if elem is None:
+        if not elems:
             skipped += 1
             continue
+        # Deterministic per-*page* pick (seeded on the image stem, a stable
+        # identity), spread across every mark on the page instead of always
+        # testing Mark 0 (see extract_all_elements docstring for why that
+        # mattered). Seeding on stem rather than idx means the same page
+        # gets the same sampled element regardless of val.jsonl's row order
+        # in a given run -- see PATCH NOTES at top of file.
+        elem = random.Random(_stable_seed(stem)).choice(elems)
 
         t0 = time.time()
         try:
@@ -428,7 +551,19 @@ def run_eval(
         print(f"  Mean dist to GT center            : {mean_dist:.3f}  (when pred exists, {len(dists)}/{n} samples)")
     print(f"  No prediction (parser found noth) : {no_pred_n}/{n}")
     print(f"  Mean inference time               : {mean_time:.2f}s / sample")
+
+    # ── collapse diagnostic: does accuracy crater for gt_mark != 0? ────
+    mark0_results = [r for r in results if r.gt_mark == 0]
+    non0_results  = [r for r in results if r.gt_mark is not None and r.gt_mark != 0]
+    acc0 = acc_non0 = None
+    if mark0_results:
+        acc0 = sum(r.click_hit for r in mark0_results) / len(mark0_results)
+        print(f"  Click acc when gt_mark == 0        : {acc0:.3f}  (n={len(mark0_results)})")
+    if non0_results:
+        acc_non0 = sum(r.click_hit for r in non0_results) / len(non0_results)
+        print(f"  Click acc when gt_mark != 0        : {acc_non0:.3f}  (n={len(non0_results)})")
     print()
+
     for ttype, rs in sorted(by_task.items()):
         acc  = sum(r.click_hit  for r in rs) / len(rs)
         ds   = [r.dist_to_gt for r in rs if r.dist_to_gt is not None]
@@ -450,6 +585,10 @@ def run_eval(
         "mean_dist_to_gt":round(mean_dist,  4) if mean_dist is not None else None,
         "no_pred":        no_pred_n,
         "mean_time_s":    round(mean_time,  2),
+        "click_acc_gt_mark_0":    round(acc0, 4)     if acc0     is not None else None,
+        "click_acc_gt_mark_non0": round(acc_non0, 4) if acc_non0 is not None else None,
+        "n_gt_mark_0":     len(mark0_results),
+        "n_gt_mark_non0":  len(non0_results),
         "by_task": {
             t: {
                 "n":            len(rs),
@@ -472,35 +611,99 @@ def run_eval(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Compare two runs
+# Compare two+ runs
 # ══════════════════════════════════════════════════════════════════════════════
 
-def compare(baseline_json: str, finetuned_json: str) -> None:
-    with open(baseline_json)  as f: b  = json.load(f)
-    with open(finetuned_json) as f: ft = json.load(f)
-    print("\n" + "=" * 60)
-    print("Comparison: baseline vs fine-tuned")
-    print("=" * 60)
-    print(f"  {'Metric':<38} {'Baseline':>10} {'Finetuned':>10} {'Delta':>8}")
-    print(f"  {'-'*38} {'-'*10} {'-'*10} {'-'*8}")
-    for key, label, pct in [
-        ("click_accuracy",  "Click accuracy",          True),
-        ("iou_hit_50",      "IoU hit @ 0.5",           True),
-        ("mean_iou",        "Mean IoU",                True),
-        ("mean_dist_to_gt", "Mean dist to GT center",  False),
-    ]:
-        bv  = b.get(key)
-        ftv = ft.get(key)
-        if bv is None or ftv is None:
-            continue
-        d = ftv - bv
-        if pct:
-            print(f"  {label:<38} {bv*100:>9.1f}% {ftv*100:>9.1f}% {d*100:>+7.1f}%")
-        else:
-            # distance: lower is better, so flip sign for delta display
-            print(f"  {label:<38} {bv:>10.3f} {ftv:>10.3f} {d:>+8.3f}")
-    print("=" * 60)
-    print("  (For dist_to_gt: lower is better — negative delta = improvement)")
+def compare(json_files: list[str]) -> None:
+    runs = []
+
+    for path in json_files:
+        with open(path) as f:
+            data = json.load(f)
+
+        runs.append({
+            "name": data.get("run", Path(path).stem),
+            "click_accuracy": data.get("click_accuracy"),
+            "iou_hit_50": data.get("iou_hit_50"),
+            "mean_iou": data.get("mean_iou"),
+            "mean_dist_to_gt": data.get("mean_dist_to_gt"),
+            "no_pred": data.get("no_pred"),
+            "n_evaluated": data.get("n_evaluated"),
+            # PATCH: these existed in the saved JSON all along but were
+            # never pulled into compare()'s table before.
+            "click_acc_gt_mark_0":    data.get("click_acc_gt_mark_0"),
+            "click_acc_gt_mark_non0": data.get("click_acc_gt_mark_non0"),
+            "n_gt_mark_0":            data.get("n_gt_mark_0"),
+            "n_gt_mark_non0":         data.get("n_gt_mark_non0"),
+        })
+
+    if not runs:
+        print("No runs provided.")
+        return
+
+    # Highest click accuracy is treated as reference
+    best_click = max(r["click_accuracy"] for r in runs if r["click_accuracy"] is not None)
+
+    print("\n" + "=" * 135)
+    print("Evaluation Comparison")
+    print("=" * 135)
+    print(
+        f"{'Run':<26}"
+        f"{'Click Acc':>11}"
+        f"{'IoU@0.5':>10}"
+        f"{'Mean IoU':>10}"
+        f"{'Mean Dist':>11}"
+        f"{'No Pred':>9}"
+        f"{'Acc(mark=0)':>13}"
+        f"{'Acc(mark!=0)':>14}"
+        f"{'Δ Click':>10}"
+    )
+    print("-" * 135)
+
+    for r in sorted(runs, key=lambda x: x["click_accuracy"], reverse=True):
+
+        delta = r["click_accuracy"] - best_click
+
+        def fmt_pct(v):
+            return f"{100*v:.1f}%" if v is not None else "-"
+
+        def fmt_num(v):
+            return f"{v:.3f}" if v is not None else "-"
+
+        click  = fmt_pct(r["click_accuracy"])
+        iou50  = fmt_pct(r["iou_hit_50"])
+        miou   = fmt_num(r["mean_iou"])
+        mdist  = fmt_num(r["mean_dist_to_gt"])
+        nopred = str(r["no_pred"]) if r["no_pred"] is not None else "-"
+
+        mark0_str = fmt_pct(r["click_acc_gt_mark_0"])
+        if r["n_gt_mark_0"] is not None:
+            mark0_str += f" (n={r['n_gt_mark_0']})"
+
+        non0_str = fmt_pct(r["click_acc_gt_mark_non0"])
+        if r["n_gt_mark_non0"] is not None:
+            non0_str += f" (n={r['n_gt_mark_non0']})"
+
+        print(
+            f"{r['name']:<26}"
+            f"{click:>11}"
+            f"{iou50:>10}"
+            f"{miou:>10}"
+            f"{mdist:>11}"
+            f"{nopred:>9}"
+            f"{mark0_str:>13}"
+            f"{non0_str:>14}"
+            f"{delta*100:+9.1f}%"
+        )
+
+    print("=" * 135)
+    print(
+        "Note: Acc(mark!=0) is the real collapse diagnostic -- a model that "
+        "always predicts Mark 0 can still post a decent blended Click Acc if "
+        "a meaningful share of ground truth is genuinely Mark 0. Trust the "
+        "mark!=0 column over the blended one when judging whether SoM "
+        "training actually generalized."
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -514,14 +717,20 @@ if __name__ == "__main__":
     parser.add_argument("--adapter",        type=str, default=None)
     parser.add_argument("--max-samples",    type=int, default=None)
     parser.add_argument("--name",           type=str, default=None)
-    parser.add_argument("--baseline-json",  type=str,
-                        default="results/eval_baseline.json")
-    parser.add_argument("--finetuned-json", type=str,
-                        default="results/eval_finetuned.json")
+    parser.add_argument(
+    "--jsons",
+    nargs="+",
+    required=False,
+    default=[
+        "results/eval_baseline.json",
+        "results/eval_full_finetuned.json",
+    ],
+    help="One or more evaluation JSON files."
+    )
     args = parser.parse_args()
 
     if args.mode == "compare":
-        compare(args.baseline_json, args.finetuned_json)
+        compare(args.jsons)
     else:
         name = args.name or args.mode
         run_eval(

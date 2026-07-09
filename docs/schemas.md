@@ -234,6 +234,19 @@ empirically: SeeClick-Web has **zero** such elements across the full
 appears in the current corpus (reworked 2026-07-02; previously every
 conversation ended on a "No input areas found." filler turn regardless).
 
+**Downstream consequence for training/eval (confirmed 2026-07-02):**
+because task type is sampled per-page rather than per-element, a page's
+entire conversation is *either* grounding (`text→bbox`/`text→point`,
+answers contain `Coordinate:`) *or* one of the other two types (no
+`Coordinate:` anywhere on that page). Any pipeline that filters on
+`Coordinate:` presence — the training dataset loader and the eval
+harness both do — is therefore filtering at the *page* level, not
+dropping individual elements within an otherwise-usable page. Of the
+8,997 train pages, **728 are grounding-type** and eligible for the
+current grounding-accuracy experiment; the remaining 8,269 are valid,
+correctly-formatted `bbox→text`/`point→text` data that's simply out of
+scope for this particular metric (see Fine-tuning section below).
+
 ### Output schema (conversations.jsonl)
 One JSON object per line, one object per screenshot (reworked 2026-07-02:
 one turn pair per element, matching paper Figure 12, rather than one
@@ -258,6 +271,18 @@ empty, 0 skipped missing-sidecar; split 8,997 train / 999 val, seed=42).
 
 Format validated against paper Figure 12.
 
+**Historical note — the bug this format fixes:** the *previous* format
+(pre-2026-07-02) merged every element on a page into a single assistant
+turn (e.g. one long string: `"Coordinate: (...). Mark: 0.\nCoordinate:
+(...). Mark: 1.\n..."`). Training on that format taught the model that
+its answer always *starts* with `Mark: 0`, which is the confirmed root
+cause of the "Mark: 0" collapse observed during web-agent testing (see
+devlog.md, 2026-06-25 and 2026-07-02 continued). The one-turn-pair-per-
+element rework, combined with a training script updated to use every
+turn-pair (not just the first) and mask loss across all assistant spans,
+is the fix — confirmed working via a controlled smoke test (see Results
+below).
+
 ## Decisions log
 - Tried fixed `MIN_AREA = 0.0005`: too aggressive on sparse pages
   (e.g. pages with only 1–2 small text links got 0 marks). Switched to
@@ -281,6 +306,12 @@ Format validated against paper Figure 12.
 - SoM rendering is decoupled from formatter.py by design. Rendering
   happens as a separate preprocessing step; formatter reads pre-rendered
   images. This keeps the two concerns independent.
+- (2026-07-02) Considered training on the full 8,997-page corpus by
+  including `bbox→text`/`point→text` pages. Rejected for the current
+  ablation: those subtasks require a free-text loss target instead of
+  `Coordinate:`/`Mark:`, and wouldn't move the grounding-accuracy metric
+  this experiment reports. Logged as candidate future work (see
+  TODO.md) rather than folded in under time pressure.
 
 ## Current Project Status
 
@@ -305,25 +336,50 @@ Completed:
 - train/val split (90/10, seed=42) (regenerated 2026-07-02: 8,997/999)
 - UIAgent implementation (ui_agent.py)
 - Eval harness (eval.py) — two modes: baseline and finetuned
-- Baseline eval: 402/500 samples, click accuracy 1.7%
-  (results/eval_baseline.json)
-- finetune.py: QLoRA training script for Kaggle T4
-- LoRA adapter trained (Kaggle T4, 3 epochs, ~8.9k samples)
-  → models/lora_adapter/adapter_model.safetensors (148.7MB)
+- **Eval harness Mark-0 blind spot fixed (2026-07-02):**
+  `extract_first_element` only ever read the first turn-pair per page,
+  meaning ground truth was always Mark 0 — a collapsed model would score
+  identically to a genuinely fixed one on this eval. Added
+  `extract_all_elements()` (samples any turn-pair per page) and a
+  `gt_mark==0` vs `gt_mark!=0` accuracy breakdown, which is the actual
+  diagnostic for collapse (see Results below).
+- Baseline eval (old, Mark-0-only methodology): 402/500 samples, click
+  accuracy 1.7% (results/eval_baseline.json) — **SUPERSEDED, see Results**
+- Baseline eval (fixed methodology): 80/100 samples, click accuracy 0.0%
+  (results/eval_baseline_v2.json)
+- finetune.py: original QLoRA training script for Kaggle T4 (local repo
+  script) — superseded for this round by an updated Kaggle-notebook
+  training pipeline (multi-turn-per-page dataset/collator); finetune.py
+  itself not yet updated to match — see TODO.md
+- LoRA adapter trained (Kaggle T4, 3 epochs, ~8.9k pages, old merged-
+  mega-turn data) → models/lora_adapter/ (148.7MB) — **STALE**, root
+  cause of Mark:0 collapse confirmed to be this adapter's training data
+- Smoke-test LoRA adapter (200 pages, 25 steps, new multi-turn pipeline)
+  → results/eval_smoke_finetuned.json: 27.5% overall, 22.6% on
+  gt_mark!=0 — collapse fix CONFIRMED (non-zero-mark accuracy is not
+  near-zero, which is what a still-collapsed model would show)
+- Full retrain LoRA adapter (728 pages, 91 steps, same pipeline)
+  → models/lora_adapter_v2/ — training COMPLETE, eval PENDING
 - OmniParser-v2.0 installed (models/omniparser/)
 - click_visualizer.py demo pipeline: OmniParser + Qwen, baseline and
   finetuned modes, click-point rendering, confirmed accurate on real
-  screenshots
+  screenshots (using the now-stale models/lora_adapter/ — needs
+  re-pointing at models/lora_adapter_v2/ once full eval confirms it)
 
 Current focus:
-- **LoRA adapter (models/lora_adapter/) is now STALE** — it was trained on
-  pre-rework data (old dot-marker renders, merged mega-turn format).
-  Retrain on the new train.jsonl before trusting finetuned eval numbers.
-- Statistical validation pass on the new conversations.jsonl (still open,
-  see TODO.md)
-- Retrain QLoRA on new train.jsonl, then run finetuned eval
-  (eval.py --mode finetuned) to get delta
-- Obtain Magma-8B reference numbers
+- Run full finetuned eval on `models/lora_adapter_v2` and record the
+  compare-vs-baseline_v2 delta (this is the number that goes in the
+  Results table below and in the demo presentation)
+- Statistical validation pass on conversations.jsonl (still open, not
+  blocking)
+- Re-point click_visualizer.py / inference_server.py / web_agent.py demo
+  stack at lora_adapter_v2 once the full eval confirms it's solid
+- Re-evaluate whether the DOM-priority SoM rebuild workaround (which
+  exploited the Mark:0 bias rather than fixing it) is still needed now
+  that the root cause is fixed, or can be simplified
+- Obtain Magma-8B reference numbers (live Kaggle run if time allows
+  before the demo; otherwise cite paper-reported figures, clearly
+  labeled as such rather than reproduced)
 
 ---
 
@@ -341,9 +397,9 @@ train/val split (90/10, seed=42)
 ┌─────────────────────┐    ┌──────────────────────┐
 │ baseline eval       │    │ QLoRA fine-tune       │
 │ (raw screenshot,    │    │ (trl.SFTTrainer,      │
-│  no SoM, no adapter)│    │  Kaggle T4, 3 epochs) │
+│  no SoM, no adapter)│    │  Kaggle T4)           │
 └──────────┬──────────┘    └──────────┬────────────┘
-           │                          │ LoRA adapter (148.7MB)
+           │                          │ LoRA adapter
            └──────────── delta ───────┘
                   click accuracy @ IoU 0.5
 ```
@@ -376,18 +432,41 @@ GT bbox sourced from:
 Pixel-scale predictions (any value > 2.0) auto-normalized by
 dividing by SoM image dimensions.
 
+**Element sampling (reworked 2026-07-02):** previously always evaluated
+the first turn-pair on each page (`extract_first_element`), which is
+almost always Mark 0 — meaning every eval sample's ground truth was
+Mark 0, structurally unable to detect a model that always predicts
+Mark 0. Now samples one turn-pair per page via
+`extract_all_elements()` + `random.Random(1000 + idx)` (deterministic,
+spread across every mark on the page). Results additionally broken down
+by `gt_mark == 0` vs `gt_mark != 0` — a large gap where non-zero-mark
+accuracy is near zero is the collapse signature; comparable accuracy
+across both means the model isn't just defaulting to the first answer.
+
 ### Results
 
-| Mode       | Samples evaluated | Click accuracy | IoU@0.5 | Mean IoU |
-|------------|-------------------|----------------|---------|----------|
-| baseline   | 402 / 500         | 1.7%           | 0.0%    | 0.005    |
-| finetuned  | —                 | TBD            | TBD     | TBD      |
-| Magma-8B   | —                 | TBD            | TBD     | TBD      |
+| Mode                          | Samples evaluated | Click accuracy | gt_mark==0 | gt_mark!=0 |
+|--------------------------------|--------------------|-----------------|------------|------------|
+| baseline (old, Mark-0-only)   | 402 / 500          | 1.7% *(superseded)* | —      | —          |
+| baseline (v2, fixed eval)     | 80 / 100           | 0.0%            | 0.0%       | 0.0%       |
+| smoke finetuned (200 pages)   | 80 / 100           | 27.5%           | 37.0%      | 22.6%      |
+| full finetuned (728 pages)    | —                  | TBD             | TBD        | TBD        |
+| Magma-8B                      | —                  | TBD             | TBD        | TBD        |
+
+Interpretation: the smoke-test result is the key evidence that the
+Mark:0 collapse is fixed — a still-collapsed model would show
+`gt_mark!=0` accuracy near 0% (predicting Mark 0's location essentially
+never falls inside a different element's bbox by chance); 22.6% is
+clearly not that. The mark0-vs-non0 gap (37.0% vs 22.6%) that remains
+is a plausible ordinary pattern (header/logo/nav elements at Mark 0 tend
+to be more visually distinctive), not the collapse signature.
 
 ### Results location
-results/eval_baseline.json   ← complete
-results/eval_finetuned.json  ← pending
-results/eval_magma.json      ← pending
+results/eval_baseline.json          ← superseded (Mark-0-only methodology)
+results/eval_baseline_v2.json       ← complete (fixed methodology)
+results/eval_smoke_finetuned.json   ← complete (200-page smoke test)
+results/eval_full_finetuned.json    ← pending (728-page full retrain)
+results/eval_magma.json             ← pending
 
 ## Demo pipeline architecture
 
@@ -412,6 +491,10 @@ Two modes:
     → Qwen prompted with exact text_to_point training format
     → model responds "Coordinate: (cx, cy). Mark: N."
     → pipeline looks up Mark N's center from mark_to_center dict
+
+  NOTE (2026-07-02): `--lora` currently points at the stale
+  `models/lora_adapter/`. Repoint at `models/lora_adapter_v2/` once the
+  full eval confirms it — see Current Focus above.
 
 Prompt templates:
   PROMPT_TEMPLATE (finetuned):
@@ -454,6 +537,9 @@ Start:
     --mode finetuned --lora models/lora_adapter --port 8787
 
   python -m src.agent.inference_server --mode baseline --port 8787
+
+  NOTE (2026-07-02): same stale-adapter caveat as click_visualizer.py
+  above — repoint --lora at models/lora_adapter_v2 once confirmed.
 
 Endpoints:
   GET  /health
@@ -580,3 +666,9 @@ search bar is always Mark 0, so "Mark: 0" responses click correctly.
 
 DOM elements drawn with blue bounding-box outline + red circle marker
 (blue distinguishes them from OmniParser detections visually).
+
+**NOTE (2026-07-02):** this was a workaround built around the Mark:0
+bias, not a fix for it — see devlog.md 2026-06-25. Now that the actual
+root cause (training data format) is confirmed and fixed, it's worth
+re-evaluating whether this rebuild is still necessary or can be
+simplified once lora_adapter_v2 is validated (see Current Focus above).
