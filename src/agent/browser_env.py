@@ -337,10 +337,23 @@ class BrowserEnv:
         """
         Extract visible interactive DOM elements via JavaScript.
 
-        Queries <input>, <textarea>, <select>, <button>, and ARIA equivalents.
+        Queries <input>, <textarea>, <select>, <button>, <a href>, and ARIA
+        equivalents (including role="link"/"button" and elements with an
+        onclick handler — common for JS-driven nav items that aren't real
+        <button> or <a> tags).
+
         Returns a list of dicts: {tag, type, label, bbox_norm: [x1,y1,x2,y2]}
         where bbox_norm coordinates are normalised to [0,1] over the viewport.
-        Elements outside the visible viewport or with negligible size are skipped.
+        Elements outside the visible viewport, with negligible size, or
+        disabled are skipped.
+
+        NOTE: previously this selector only covered input/textarea/select/
+        button + a few ARIA roles — it had no `<a>` tag, so any plain link
+        (nav items like "Sign in", "Account", footer links) was invisible to
+        DOM extraction and could only ever be caught by OmniParser's visual
+        detection, which is not guaranteed to survive MAX_ELEMENTS capping.
+        This was the root cause of the agent being unable to target "Hello,
+        sign in" on Amazon — the element was never in dom_elements at all.
         """
         vp = self._page.viewport_size or {"width": self._vp_w, "height": self._vp_h}
         vp_w, vp_h = vp["width"], vp["height"]
@@ -348,9 +361,12 @@ class BrowserEnv:
         raw = self._page.evaluate("""
             () => {
                 const sel = 'input:not([type="hidden"]), textarea, select, button, '
-                          + '[role="searchbox"], [role="combobox"], [role="textbox"]';
+                          + 'a[href], [role="searchbox"], [role="combobox"], '
+                          + '[role="textbox"], [role="link"], [role="button"], '
+                          + '[onclick]';
                 const out = [];
                 for (const el of document.querySelectorAll(sel)) {
+                    if (el.disabled) continue;
                     const r = el.getBoundingClientRect();
                     if (r.width < 5 || r.height < 5) continue;
                     if (r.bottom < 0 || r.top > window.innerHeight) continue;
@@ -358,12 +374,22 @@ class BrowserEnv:
                     const style = window.getComputedStyle(el);
                     if (style.display === 'none' || style.visibility === 'hidden'
                             || style.opacity === '0') continue;
+                    if (el.getAttribute('aria-disabled') === 'true') continue;
+
+                    // Links/JS-clickables usually carry their label as visible
+                    // text, not placeholder/name — fall back to trimmed
+                    // innerText (capped) so "Hello, sign in" etc. gets a
+                    // usable label instead of an empty string.
+                    const text = (el.innerText || el.textContent || '')
+                                    .trim().replace(/\\s+/g, ' ').slice(0, 60);
+
                     out.push({
                         tag:  el.tagName.toLowerCase(),
                         type: el.type || '',
                         placeholder: el.placeholder || el.getAttribute('aria-label')
                                      || el.getAttribute('aria-placeholder') || '',
                         name: el.name || el.id || '',
+                        text: text,
                         x1: r.left, y1: r.top, x2: r.right, y2: r.bottom,
                     });
                 }
@@ -379,7 +405,7 @@ class BrowserEnv:
             y2 = min(1.0, e["y2"] / vp_h)
             if x2 - x1 < 0.01 or y2 - y1 < 0.005:
                 continue
-            label = e["placeholder"] or e["name"] or f"{e['tag']}[{e['type']}]"
+            label = e["placeholder"] or e["name"] or e["text"] or f"{e['tag']}[{e['type']}]"
             elements.append({
                 "tag":      e["tag"],
                 "type":     e["type"],

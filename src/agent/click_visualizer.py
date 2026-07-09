@@ -50,6 +50,13 @@ OCR_THRESHOLD  = 0.75   # lowered from 0.92; 0.50 produced garbage OCR on anti-a
 IOU_THRESHOLD  = 0.4
 MAX_ELEMENTS   = 35
 
+# ── mark resolution config ───────────────────────────────────────────────
+# Max normalised distance between a parsed coordinate and a mark's center
+# for that mark to be considered "the same point". Chosen loosely — big
+# enough to tolerate imprecise coordinate guesses, small enough not to
+# snap to an unrelated mark across the page.
+NEAREST_MARK_MAX_DIST = 0.15
+
 # ── prompt templates ───────────────────────────────────────────────────
 # Fine-tuned prompt: exact text_to_point format used during training
 PROMPT_TEMPLATE = (
@@ -112,7 +119,14 @@ def _parse_point(response: str, image_size: tuple = (1, 1)) -> tuple | None:
 
 
 def _draw_som_mark(image: Image.Image, bbox_norm: list, mark_id: int, radius: int = 9) -> None:
-    """Draw a single mark (red circle + label) on image — same style as apply_som."""
+    """
+    Draw a single mark (red circle + label) on image — dot style.
+    Only used by the BASELINE (non-training-style) DOM-append path in act(),
+    where the model was never trained on marks at all, so matching the
+    training-style renderer exactly doesn't matter. Do NOT use this for
+    training-style/fine-tuned inference — see apply_som() in
+    src.som.render_som for the renderer that matches training data.
+    """
     w, h = image.size
     cx = int((bbox_norm[0] + bbox_norm[2]) / 2 * w)
     cy = int((bbox_norm[1] + bbox_norm[3]) / 2 * h)
@@ -131,7 +145,10 @@ def _draw_som_mark(image: Image.Image, bbox_norm: list, mark_id: int, radius: in
 
 
 def _inject_dom_mark(image: Image.Image, bbox_norm: list, mark_id: int) -> None:
-    """Draw a DOM-injected element mark: blue outline around the bbox + red circle."""
+    """
+    Draw a DOM-injected element mark: blue outline around the bbox + red
+    dot mark. Baseline-mode only — see _draw_som_mark note above.
+    """
     w, h = image.size
     x1, y1 = int(bbox_norm[0] * w), int(bbox_norm[1] * h)
     x2, y2 = int(bbox_norm[2] * w), int(bbox_norm[3] * h)
@@ -144,6 +161,37 @@ def _extract_mark(response: str) -> int | None:
     """Extract mark number from model response."""
     m = re.search(r'[Mm]ark\s*:?\s*(\d+)', response)
     return int(m.group(1)) if m else None
+
+
+def _nearest_mark(
+    coord: tuple,
+    mark_to_center: dict,
+    max_dist: float = NEAREST_MARK_MAX_DIST,
+) -> int | None:
+    """
+    Find the mark whose center is closest to a parsed coordinate.
+
+    Returns None if nothing is within max_dist (normalised euclidean
+    distance), so a wildly-off coordinate doesn't get force-snapped onto
+    an unrelated mark.
+
+    This exists because the model's literal "Mark: N" text output has a
+    known residual bias toward N=0 (see devlog — Mark:0 collapse history)
+    that can override an otherwise-correct coordinate guess if trusted
+    literally. Using the coordinate to pick the mark, rather than trusting
+    the mark text directly, is a workaround for that bias — not a fix to
+    the model itself. Flag this clearly if these numbers ever feed the
+    eval harness or paper, since it changes what "grounding accuracy"
+    actually measures for this checkpoint.
+    """
+    if not mark_to_center:
+        return None
+    best_id, best_dist = None, float("inf")
+    for mid, (mx, my) in mark_to_center.items():
+        d = ((coord[0] - mx) ** 2 + (coord[1] - my) ** 2) ** 0.5
+        if d < best_dist:
+            best_id, best_dist = mid, d
+    return best_id if best_dist <= max_dist else None
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -263,9 +311,11 @@ class DemoRunner:
         self._raw_label_coords  = label_coords   # saved for DOM-priority re-render
 
         if self.training_style:
-            # Render in training circle style (red circles, same as training data).
-            # apply_som re-sorts elements by area and assigns NEW sequential mark IDs,
-            # so we must build mark_to_center from its `placed` output — not label_coords.
+            # Render in training box style (matches src.som.render_som.apply_som,
+            # the same renderer used to build training data). apply_som
+            # re-sorts elements by area and assigns NEW sequential mark IDs,
+            # so we must build mark_to_center from its `placed` output — not
+            # label_coords.
             elements_for_som = [
                 {"bbox": [x/iw, y/ih, (x+bw)/iw, (y+bh)/ih]}
                 for (x, y, bw, bh) in label_coords.values()
@@ -297,13 +347,18 @@ class DemoRunner:
         max_marks: int = 15,
     ) -> tuple[Image.Image, dict, list]:
         """
-        Re-render the SoM from scratch with DOM elements occupying the LOWEST
-        mark IDs (0, 1, ...), then OmniParser elements fill the rest.
-        Capped at max_marks to avoid overwhelming the model.
+        Re-render the SoM with DOM elements occupying the lowest mark IDs
+        (0, 1, ...), then OmniParser elements fill the rest.
 
-        This converts the model's Mark:0 bias into an asset: the search bar
-        (or most relevant input) becomes Mark 0, so "Mark: 0" responses are
-        now correct for search/input tasks.
+        Renders through apply_som(preserve_order=True) — the SAME
+        box-outline + corner-label renderer used for training data — rather
+        than a separate dot-style drawer, so live inference input matches
+        what the model was trained on. (Previously this function drew its
+        own dot-style marks via _draw_som_mark/_inject_dom_mark, which
+        diverged from the training renderer after the box-outline fix
+        landed in render_som.py but was never ported here — that mismatch
+        was one root cause of the model defaulting to Mark 0 on nearly
+        every task.)
 
         DOM priority: text inputs → buttons → other interactive elements.
         """
@@ -321,39 +376,41 @@ class DemoRunner:
         valid_dom = [e for e in dom_elements if len(e.get("bbox_norm", [])) == 4]
         sorted_dom = sorted(valid_dom, key=_dom_order)
 
-        img          = original_image.copy()
-        mark_to_center = {}
-        content_list   = []
-        mark_id        = 0
-        draw           = ImageDraw.Draw(img)
-
-        # 1. DOM elements — draw blue outline + red circle mark
-        for elem in sorted_dom:
-            if mark_id >= max_marks:
-                break
-            bbox = elem["bbox_norm"]
-            x1, y1 = int(bbox[0] * iw), int(bbox[1] * ih)
-            x2, y2 = int(bbox[2] * iw), int(bbox[3] * ih)
-            draw.rectangle([x1, y1, x2, y2], outline=(0, 120, 255), width=2)
-            _draw_som_mark(img, bbox, mark_id)
-            mark_to_center[mark_id] = ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
-            content_list.append({
+        # Build one ordered candidate list — DOM elements first (capped),
+        # then OmniParser elements — in the {"bbox": [...]} shape apply_som
+        # expects. preserve_order=True means apply_som won't re-sort by
+        # area, so this ordering maps directly to mark IDs 0, 1, 2, ...
+        ordered_elements = []
+        dom_content = []
+        for elem in sorted_dom[:max_marks]:
+            ordered_elements.append({"bbox": elem["bbox_norm"]})
+            dom_content.append({
                 "content": elem.get("label", elem.get("tag", "input")),
                 "type":    elem.get("tag", "input"),
-                "bbox":    bbox,
+                "bbox":    elem["bbox_norm"],
             })
-            mark_id += 1
 
-        # 2. OmniParser elements after
         raw = getattr(self, "_raw_label_coords", {})
-        for ((x, y, bw, bh), omni_item) in zip(raw.values(), omni_content_list):
-            if mark_id >= max_marks:
-                break
-            bbox = [x / iw, y / ih, (x + bw) / iw, (y + bh) / ih]
-            _draw_som_mark(img, bbox, mark_id)
-            mark_to_center[mark_id] = ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
-            content_list.append(omni_item)
-            mark_id += 1
+        omni_elements = [
+            {"bbox": [x / iw, y / ih, (x + bw) / iw, (y + bh) / ih]}
+            for (x, y, bw, bh) in raw.values()
+        ]
+
+        remaining = max(0, max_marks - len(ordered_elements))
+        ordered_elements.extend(omni_elements[:remaining])
+        ordered_content = dom_content + omni_content_list[:remaining]
+
+        from src.som.render_som import apply_som
+        img, placed = apply_som(original_image.copy(), ordered_elements, preserve_order=True)
+
+        mark_to_center = {
+            mark_id: ((el["bbox"][0] + el["bbox"][2]) / 2, (el["bbox"][1] + el["bbox"][3]) / 2)
+            for mark_id, el in placed
+        }
+        # apply_som's non-overlap gate can skip elements, so `placed` may be
+        # shorter than `ordered_content` — index into ordered_content by
+        # position, not by mark_id, since gate-skipped elements shift things.
+        content_list = [ordered_content[i] for i, _ in enumerate(placed)]
 
         return img, mark_to_center, content_list
 
@@ -415,6 +472,7 @@ class DemoRunner:
             inference_image = som_image
             if dom_elements:
                 # baseline mode — just append DOM marks visually at the end
+                # (dot style is fine here; baseline was never trained on marks)
                 next_id = max(mark_to_center.keys(), default=-1) + 1
                 for elem in dom_elements:
                     bbox = elem.get("bbox_norm", [])
@@ -441,18 +499,37 @@ class DemoRunner:
         print("  Running Qwen...", flush=True)
         response = self._run_qwen(inference_image, prompt)
 
-        # resolve point: mark lookup first, coordinate parse as fallback
-        point = None
+        # Resolve point: coordinate-guided mark lookup FIRST, literal mark
+        # text as fallback only if no coordinate was parsed at all.
+        #
+        # Rationale: the model's literal "Mark: N" text has a known
+        # residual bias toward N=0 (see devlog) that can override an
+        # otherwise-correct coordinate guess if trusted directly. Parsing
+        # the coordinate and snapping it to the nearest mark (within
+        # NEAREST_MARK_MAX_DIST) is more robust to that bias. This is a
+        # workaround for the demo, not a fix to the model — flag clearly
+        # if these numbers ever feed eval.py or the paper, since it
+        # changes what "grounding accuracy" measures for this checkpoint.
+        raw_point = _parse_point(response, image_size=(w, h))
         mark_id = _extract_mark(response)
-        if mark_id is not None:
+
+        if raw_point is not None:
+            nearest = _nearest_mark(raw_point, mark_to_center)
+            if nearest is not None:
+                point = mark_to_center[nearest]
+                print(f"  Coordinate {raw_point} → nearest Mark {nearest} → center {point}")
+            else:
+                point = raw_point
+                print(f"  Coordinate {raw_point} used directly (no mark within range)")
+        elif mark_id is not None:
             point = mark_to_center.get(mark_id)
             if point:
-                print(f"  Mark {mark_id} → center {point}")
+                print(f"  Mark {mark_id} → center {point}  (no coordinate parsed)")
             else:
-                print(f"  Mark {mark_id} not in label_coords, falling back to coord parse")
-                point = _parse_point(response, image_size=(w, h))
+                print(f"  Mark {mark_id} not in label_coords, and no coordinate parsed — no point")
         else:
-            point = _parse_point(response, image_size=(w, h))
+            point = None
+            print("  No coordinate or mark parsed from response")
 
         return response, point
 

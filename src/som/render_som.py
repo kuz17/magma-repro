@@ -83,9 +83,21 @@ def _find_least_overlapping_corner(box, bboxes, drawn_boxes, text_size, image_si
     return best_corner
 
 
-def apply_som(image, elements, radius=9):
+def apply_som(image, elements, radius=9, preserve_order=False):
     """
     Draw Set-of-Mark overlays onto image.
+
+    Args:
+        image: PIL image to annotate (mutated in place, and also returned).
+        elements: list of dicts, each with a "bbox" key — normalized
+            [x1, y1, x2, y2] coordinates.
+        radius: used only to derive the non-overlap gate distance
+            (min_dist_sq below) — not for drawing, since marks are boxes
+            with corner labels, not circles.
+        preserve_order: if True, skip the area-sort and place elements in
+            the order given. Used when the caller has already prioritized
+            order (e.g. DOM elements before OmniParser elements) and that
+            order must map directly to mark IDs 0, 1, 2, ... .
 
     Returns:
         image   — the annotated PIL image
@@ -98,8 +110,11 @@ def apply_som(image, elements, radius=9):
     # 1. drop degenerate bboxes
     candidates = [e for e in elements if bbox_area(e["bbox"]) > MIN_AREA_FLOOR]
 
-    # 2. larger elements win placement ties
-    candidates.sort(key=lambda e: -bbox_area(e["bbox"]))
+    # 2. larger elements win placement ties — unless caller already ordered
+    # them (e.g. DOM-priority ordering, which must be preserved so DOM
+    # elements land on the lowest mark IDs regardless of on-screen size)
+    if not preserve_order:
+        candidates.sort(key=lambda e: -bbox_area(e["bbox"]))
 
     # 3. greedy non-overlap placement (gate only — drawing happens below,
     # once the final placed set and every box's pixel coords are known)
