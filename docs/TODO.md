@@ -166,6 +166,79 @@
 - [ ] Re-evaluate whether DOM-priority rebuild is still needed now that the
       root cause of Mark:0 bias (training data format) is fixed, or whether
       it can revert to simpler mark ordering — 2026-07-02
+- [x] Extend DOM selector to a[href], role=link/button, [onclick]; filter
+      disabled/aria-disabled; add innerText fallback label — root-caused
+      and fixed the agent's inability to target plain nav links like
+      "Hello, sign in" (previously not in dom_elements at all) — 2026-07-09
+- [x] apply_som gains preserve_order param (skip area-sort, place in given
+      order) — needed so DOM-priority elements map directly to the lowest
+      mark IDs — 2026-07-09
+- [x] _rebuild_som_dom_priority() now renders through apply_som(preserve_order=True)
+      instead of its own diverged dot-style drawer — live inference input
+      now visually matches the training renderer (box outlines + corner
+      labels), which it had silently stopped doing since the 2026-07-02
+      box-outline rework landed in render_som.py but was never ported here
+      — 2026-07-09
+- [x] Point resolution flipped to coordinate-first: parse the raw (x,y),
+      snap to nearest mark within NEAREST_MARK_MAX_DIST=0.15, fall back to
+      literal "Mark: N" text only if no coordinate parsed — mitigates
+      literal-mark-text Mark:0 bias overriding an otherwise-good coordinate
+      guess. Flagged as a demo-time workaround, not a model fix — 2026-07-09
+- [ ] max_marks=15 cap risk: on pages with many buttons/inputs, product/
+      content links (DOM tier 2, lowest priority) can be pushed past the
+      cap before the grounding model ever sees them — confirmed possible
+      via tests/smoke_dom_elements_search_page.py on a real Amazon search
+      page; not yet fixed (raise cap? separate tier for content links?) —
+      2026-07-09/10
+
+### Planner + Executor Prototype (new, 2026-07-09)
+- [x] tests/planner_agent.py: single model instance, base Qwen (adapter
+      disabled via peft disable_adapter()) plans next action
+      (SEARCH/CLICK/SCROLL/DONE), fine-tuned Qwen (adapter enabled) grounds
+      CLICK targets via existing DemoRunner.act()
+- [x] Validate disable_adapter() toggles cleanly on the 4-bit adapter and
+      re-enables correctly (tests/smoke_disable_adapter.py) — confirmed
+      safe to build on
+- [x] Iterate on planning prompt phrasing in isolation, no browser loop
+      (tests/smoke_planning_prompt.py, smoke_planning_prompt_case2.py,
+      smoke_planning_v2.py) — specifically testing whether the model uses
+      `history` to avoid repeating a completed SEARCH once results are
+      already showing
+- [ ] Outcome of the prompt iteration not written back to devlog — rerun
+      and record which phrasing actually passes the "doesn't repeat SEARCH"
+      check (case2 script prints a pass/fail hint but the run wasn't logged)
+- [ ] Run planner_agent.py end-to-end on a real multi-step task (only
+      isolated/unit-level pieces validated so far, not the full loop)
+- [ ] SEARCH step re-implements the same DOM-direct click→clear→type→submit
+      flow already in web_agent.py's `search` command — consider sharing
+      one implementation instead of two copies
+
+### Coordinate-Bias Investigation (new, in progress, uncommitted — 2026-07-09/11)
+- [x] Observed via manual live-agent testing (outputs/click_coordinate_log.csv,
+      local only, not in git): task "the first product in the search
+      results" repeatedly produces a raw coordinate in a narrow band
+      (~0.35-0.45, ~0.38-0.42) across visibly different pages, often with
+      no mark nearby (rejected_no_mark)
+- [x] tests/smoke_coordinate_bias.py (untracked): static-screenshot check
+      across genuinely different pages with a fixed task — docstring
+      records two runs landing on the identical coordinate (0.62, 0.71)
+- [x] tests/smoke_coordinate_bias_live.py (untracked): live-browser
+      follow-up with real DOM elements (static version used
+      dom_elements=None, which disables the DOM-priority boost entirely)
+- [x] tests/smoke_dom_elements_search_page.py (untracked): pure-DOM dump,
+      no model — checks whether product-title <a> links survive the
+      max_marks cap (see DOM Injection cap-risk item above)
+- [ ] Run smoke_coordinate_bias_live.py and write the actual conclusion
+      into devlog.md — current entry is based on docstrings + a partial
+      local CSV, not a reviewed result
+- [ ] If confirmed: root-cause the raw-coordinate bias before trusting the
+      2026-07-09 coordinate-first resolution order as a real fix rather
+      than a patch over a symptom
+- [ ] Rebuild click_coordinate_log.csv's logging as a real script — the
+      code that produced the existing CSV isn't anywhere in src/ as of
+      this check, so it was likely ad hoc/interactive and never saved
+- [ ] Commit the three untracked smoke test files once the investigation's
+      conclusion is written up
 
 ### Evaluation
 - [x] Implement src/eval/eval.py (two modes: baseline / finetuned)
@@ -190,14 +263,18 @@
       → results/eval_smoke_finetuned.json
       27.5% overall, 37.0% gt_mark==0, 22.6% gt_mark!=0 — 2026-07-02
       Collapse fix CONFIRMED: non-zero-mark accuracy is not near-zero.
-- [ ] Run full finetuned evaluation on lora_adapter_v2 (728-page retrain)
-      python -m src.eval.eval --mode finetuned \
-        --adapter models/lora_adapter_v2 --max-samples 200 --name full_finetuned
-- [ ] Save results/eval_full_finetuned.json
-- [ ] Run compare: baseline_v2 vs full_finetuned
-- [ ] Compute baseline → finetuned delta (using v2 numbers, not the
-      superseded 1.7%/old-finetuned pair)
-- [ ] Generate comparison table (baseline / finetuned / Magma-8B)
+- [x] Run full finetuned evaluation on lora_adapter_v2 (728-page retrain)
+      → results/eval_full_finetuned.json: 17.4% click acc, 35.6% gt_mark==0,
+      10.3% gt_mark!=0 — collapse fix CONFIRMED at full scale — 2026-07-02/03
+- [x] Save results/eval_full_finetuned.json
+- [x] Run compare: baseline_v2 vs full_finetuned (compare() now takes N
+      json paths via --jsons, not just a fixed baseline/finetuned pair) —
+      also added gt_mark0/non0 columns to the printed table, which existed
+      in the saved JSON but weren't surfaced in compare() before — 2026-07-03
+- [x] Compute baseline → finetuned delta (using v2 numbers): 0.0% → 17.4%
+      overall, 0.0% → 10.3% on gt_mark!=0
+- [ ] Generate comparison table (baseline / finetuned / Magma-8B) — still
+      needs the Magma-8B row
 - [x] Investigate Mark:0 bias — ROOT CAUSE FOUND: old training data was one
       merged assistant turn per page listing every mark in order, always
       starting "Mark: 0". Confirmed via old notebook's printed sample output.
@@ -205,6 +282,23 @@
       multi-turn training pipeline (all turn-pairs per page, not just first).
 - [ ] Analyze failure cases (once full eval numbers are in)
 - [ ] Generate qualitative examples (side-by-side baseline vs finetuned)
+- [ ] NEW (2026-07-03): a second retrain attempt (models/lora_adapter_full)
+      and a third (models/lora_adapter_full_v2) both scored WORSE than
+      lora_adapter_v2 (2.5% and 11.2% vs 17.4%; attempt 2 also spiked
+      no-prediction rate to 25%). Root cause not diagnosed — training ran
+      on Kaggle, no local log of what differed between runs. Either
+      root-cause via sweep_checkpoints.py (built, not yet run to
+      completion — no outputs/sweep_results.csv on disk) or explicitly
+      report lora_adapter_v2 as the result and drop the other two.
+- [ ] Add an "adapter" field to eval.py's saved JSON (run/mode are saved,
+      the adapter path used is not — had to reverse-engineer which JSON
+      matched which models/lora_adapter_* dir from file mtimes when
+      writing this up, 2026-07-03) — 2026-07-03
+- [ ] Run sweep_checkpoints.py to completion against lora_adapter_full's
+      checkpoint-* dirs (steps ~450-900, saved every 50) to find whether
+      any intermediate checkpoint beats lora_adapter_v2, or whether the
+      whole run regressed uniformly (ckpt_800 alone was still worse:
+      4.3% vs 17.4%) — 2026-07-03
 
 ### Fine-tuning
 - [x] Implement src/train/finetune.py
@@ -237,7 +331,20 @@
       pages qualify — matches what eval.py measures, intentional scoping,
       not a bug) — 91 steps, ~18-20 min — 2026-07-02
 - [x] Save adapter to models/lora_adapter_v2/ — 2026-07-02
-- [ ] Evaluate models/lora_adapter_v2 (see Evaluation above) — PENDING
+- [x] Evaluate models/lora_adapter_v2 (see Evaluation above) — 17.4% click
+      acc, best result to date — 2026-07-02/03
+- [x] Second retrain attempt → models/lora_adapter_full/ — REGRESSED
+      (2.5% click acc, 25% no-pred, vs 17.4%/3% for lora_adapter_v2) —
+      2026-07-02/03
+- [x] Pulled intermediate checkpoint (step 800) from attempt 2 to check
+      for mid-run degradation → models/ckpt_800/ — still bad (4.3%) —
+      2026-07-03
+- [x] Third retrain attempt → models/lora_adapter_full_v2/ — also
+      regressed relative to lora_adapter_v2 (11.2% vs 17.4%) — 2026-07-03
+- [ ] Root-cause why attempts 2/3 regressed relative to lora_adapter_v2
+      (same nominal config per devlog, but no local record of what
+      actually differed — training happened on Kaggle notebooks not
+      checked into this repo)
 - [ ] Save results/eval_full_finetuned.json
 - [ ] Compute baseline → finetuned delta
 - [ ] Generate comparison table
@@ -297,22 +404,33 @@
       validated on SeeClick-Web alone — flagged in an earlier planning
       session, not started)
 
-## Immediate Next Steps (demo-focused, updated 2026-07-02)
-1. Run full finetuned eval on `models/lora_adapter_v2` (200 samples) and
-   the compare command against `eval_baseline_v2.json`.
-2. Record final numbers in devlog.md and schemas.md's Results table.
+## Immediate Next Steps (demo-focused, updated 2026-07-09)
+1. Decide on the attempt-2/3 regression: root-cause it (run
+   sweep_checkpoints.py to completion) or explicitly report
+   `models/lora_adapter_v2` / `eval_full_finetuned.json` (17.4% click acc,
+   10.3% gt_mark!=0) as the result and stop chasing the worse follow-up runs.
+2. Land the coordinate-bias investigation: run
+   `smoke_coordinate_bias_live.py`, write the conclusion into devlog.md,
+   commit the three untracked smoke test scripts. This affects whether the
+   2026-07-09 coordinate-first mark-resolution change in click_visualizer.py
+   is a real fix or a workaround over an unresolved bias.
 3. Pick 2-3 fixed demo tasks/sites (ideally resembling training
-   distribution), screenshot and hand-check OmniParser coverage on those
-   exact pages ahead of time.
-4. Rehearse the full web_agent pipeline end-to-end 5-10 times on the
-   chosen tasks; record one clean backup run.
+   distribution), screenshot and hand-check OmniParser + DOM coverage on
+   those exact pages ahead of time — including the max_marks cap risk for
+   product/content links flagged by smoke_dom_elements_search_page.py.
+4. Rehearse the full web_agent (or planner_agent, if finished in time)
+   pipeline end-to-end 5-10 times on the chosen tasks; record one clean
+   backup run.
 5. Prepare the presentation narrative: root cause found (merged-mega-turn
    training data) → fix (per-element turn-pairs + multi-turn training) →
    controlled evidence (gt_mark==0 vs !=0 split proves it's not just
-   testing the easy case) → explicit scoping note on what's out of bounds
-   for this ablation (bbox_to_text/point_to_text, Mind2Web, full 3-epoch/
-   full-dataset retrain).
+   testing the easy case) → full-scale confirmation (17.4% / 10.3% on
+   lora_adapter_v2) → explicit scoping note on what's out of bounds for
+   this ablation (bbox_to_text/point_to_text, Mind2Web, the unresolved
+   attempt-2/3 regression, the coordinate-bias investigation).
 6. Magma-8B reference: live Kaggle run if time allows, else cite paper
    numbers clearly labeled as such.
 7. Statistical validation pass on conversations.jsonl (still open, not
    blocking the demo).
+8. Add an "adapter" field to eval.py's saved JSON (see Evaluation section)
+   — cheap fix, prevents future timeline reconstruction pain.

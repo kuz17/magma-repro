@@ -897,3 +897,318 @@ lora_adapter_v2/            : trained, not yet evaluated
    "as reported by the authors", not reproduced).
 6. Statistical validation pass on conversations.jsonl (still open from
    the previous session, not blocking).
+
+---
+
+### 2026-07-02/03 (continued further) — Full-retrain eval, a second retrain attempt, and a regression
+
+## Goal
+Close out the "Finetuned eval PENDING" item from the previous entry: run the
+full eval against `lora_adapter_v2` and record the real number. Then use
+spare Kaggle time to try improving on it before the demo.
+
+---
+
+## Completed
+
+### Full eval on lora_adapter_v2 — the number the previous session left pending
+```
+Results [full_finetuned]  —  161 evaluated, 39 skipped   (results/eval_full_finetuned.json)
+  Click accuracy (point in GT bbox) : 0.1739  (17.4%)
+  Click acc when gt_mark == 0        : 0.3556
+  Click acc when gt_mark != 0        : 0.1034
+```
+Non-zero-mark accuracy (10.3%) is well above the near-zero collapse
+signature — confirms, at full retrain scale (not just the 200-page smoke
+test), that the Mark:0 collapse fix holds. This is the headline number for
+the ablation as trained so far: **baseline 0.0% → fine-tuned 17.4%
+(gt_mark!=0: 0.0% → 10.3%)**.
+
+### Second retrain attempt ("attempt 2") — regressed
+With the collapse fix confirmed, tried a further training run on top of the
+same data/config to see if results would improve. Saved to
+`models/lora_adapter_full/`. Evaluated as `results/eval_true_full_finetuned.json`:
+```
+Results [true_full_finetuned] — 161 evaluated, 39 skipped
+  Click accuracy : 0.0248  (2.5%)     — down from 17.4%
+  gt_mark == 0    : 0.0667
+  gt_mark != 0    : 0.0086
+  No prediction   : 51/200 (25%)      — up from 6/200
+```
+Substantially worse than `lora_adapter_v2` on every metric, and a big jump in
+no-prediction rate (model output stopped parsing cleanly on a quarter of
+samples). Root cause not diagnosed this session — training itself ran on
+Kaggle outside this repo, so there's no local log of what changed between
+the two runs beyond "same config, run again." Pulled an intermediate
+checkpoint (step 800, of steps ~450–900 saved every 50) to check whether an
+earlier point in this run was better before whatever degradation set in:
+`models/ckpt_800/` → `results/eval_ckpt_800.json`: 4.3% click accuracy,
+14/47 (30%) no-prediction — still much worse than `lora_adapter_v2`, so the
+degradation isn't confined to the final checkpoint.
+
+A third attempt, `models/lora_adapter_full_v2/`, was also trained and
+evaluated (`results/eval_full_finetuned_v2.json`: 11.2% click accuracy,
+6/200 no-pred) — better than attempt 2 but still below `lora_adapter_v2`'s
+17.4%.
+
+**Net: `models/lora_adapter_v2` (the original 728-page retrain from the
+previous entry) remains the best result on disk.** Both follow-up attempts
+(`lora_adapter_full`, `lora_adapter_full_v2`) underperformed it. Demo/report
+numbers should cite `lora_adapter_v2` / `eval_full_finetuned.json` unless
+this regression gets root-caused and a genuinely better checkpoint is found.
+
+**Known documentation gap found while reconstructing this timeline:** none
+of the `results/eval_*.json` files record which adapter path or checkpoint
+produced them (`eval.py` saves `run`/`mode` but not `--adapter`). Figuring
+out which JSON corresponds to which `models/lora_adapter_*` directory for
+this entry required cross-referencing file mtimes — worth fixing in
+`eval.py` (add an `"adapter"` field to the saved JSON) so this doesn't have
+to be reverse-engineered again.
+
+### eval.py hardened for multi-run comparison
+- `compare()` rewritten: was hardcoded to exactly two runs
+  (`--baseline-json`/`--finetuned-json`); now takes `--jsons <path> [<path>...]`
+  and prints one row per run, sorted by click accuracy, with the
+  `gt_mark==0`/`gt_mark!=0` columns now actually visible in the table (they
+  were computed and saved to JSON since the previous session's Mark-0 fix,
+  but never surfaced in `compare()`'s printed output until now).
+- Per-page element sampling reseeded on the image stem (`_stable_seed()`,
+  md5-based) instead of the row index in val.jsonl. Index-based seeding
+  meant "sample #47" wasn't a stable identity if val.jsonl was ever
+  regenerated/reordered between runs (it was, earlier in this project) —
+  two runs could silently be scoring different physical pages under the
+  same nominal index. Stem-based seeding ties the sampled element to page
+  content, not file position. This is a real behavior change: sampling
+  differs from pre-patch runs, so don't mix pre-patch and post-patch JSONs
+  in one `compare()` table (documented in a patch-notes header in the file).
+
+### sweep_checkpoints.py — built, not yet run to completion
+Added `sweep_checkpoints.py`: re-evaluates every checkpoint under a given
+LoRA root (plus optionally base Qwen and extra named adapters) through
+whatever `eval.py` currently does, so results are apples-to-apples instead
+of comparing runs made with different eval-harness versions. Reads each
+run's `results/eval_{name}.json` directly rather than scraping stdout.
+Intended to answer "which of attempt 2's steps 450–900 checkpoints is
+actually best, before the degradation." **No `outputs/sweep_results.csv`
+exists in the repo** — the sweep script exists but a completed run's output
+was not found/saved. Treat the attempt-2 regression as still open.
+
+---
+
+## Current Status
+
+```
+Best fine-tuned result   : models/lora_adapter_v2 — 17.4% click acc, 10.3% gt_mark!=0
+                            (results/eval_full_finetuned.json)
+Regression (attempt 2)   : models/lora_adapter_full, ckpt_800 — both worse
+                            (2.5%, 4.3%) — root cause NOT diagnosed
+Third attempt            : models/lora_adapter_full_v2 — 11.2% — also worse
+                            than lora_adapter_v2
+Checkpoint sweep tool    : BUILT (sweep_checkpoints.py) — not run to completion
+eval.py                  : multi-run compare() + stable per-page sampling
+                            (both landed this session)
+```
+
+---
+
+## Next
+1. Root-cause the attempt-2/3 regression, or accept `lora_adapter_v2` as the
+   reported result and move on to the demo/writeup.
+2. Run `sweep_checkpoints.py` against attempt 2's checkpoint directory to
+   find the actual best step before degradation, if pursuing (1).
+3. Add an `"adapter"` field to `eval.py`'s saved JSON so future runs are
+   traceable without reverse-engineering mtimes.
+4. Magma-8B reference numbers; statistical validation pass on
+   conversations.jsonl (both still open, not blocking).
+
+---
+
+### 2026-07-09 — Agent hardening: DOM link detection, training-consistent SoM rendering, planner+executor prototype
+
+## Goal
+Fix two concrete web-agent failures hit during interactive testing (can't
+target plain nav links like "Hello, sign in"; DOM-priority rendering visibly
+diverges from what the model was actually trained on) and prototype a
+planner+executor loop as a step toward multi-step task agents instead of
+single-shot grounding.
+
+---
+
+## Completed
+
+### DOM extraction: plain links and JS-clickables were invisible
+`BrowserEnv.get_interactive_elements()`'s selector covered
+`input`/`textarea`/`select`/`button` and a few ARIA roles, but no `<a>` tag
+and nothing for `onclick`-driven fake-buttons — a common pattern for nav
+items. Root-caused the agent's inability to target "Hello, sign in" on
+Amazon: that element was simply never in `dom_elements` at all, not a
+grounding failure. Fixed:
+- Selector extended: `a[href]`, `[role="link"]`, `[role="button"]`, `[onclick]`
+- `disabled` and `aria-disabled="true"` elements now filtered out
+- Label fallback: links/JS-clickables usually carry their label as visible
+  text, not `placeholder`/`name` — added trimmed `innerText`/`textContent`
+  (capped 60 chars) as a fallback source so these elements get a usable
+  label instead of an empty string
+
+### render_som.py: `apply_som` gains `preserve_order`
+Added a `preserve_order` flag to `apply_som` — when `True`, skips the
+area-descending sort and places elements in the order given. Needed by the
+DOM-priority rebuild (below), which must map DOM elements onto the lowest
+mark IDs regardless of their on-screen size.
+
+### click_visualizer.py: DOM-priority rebuild now uses the real training renderer
+`_rebuild_som_dom_priority()` previously drew its own dot-style marks via
+`_draw_som_mark`/`_inject_dom_mark` — a leftover from before the box-outline
+renderer rework (2026-07-02) that was never ported into this function. Live
+inference input for training-style mode was therefore visually diverging
+from what the model was actually trained on, which was itself a plausible
+contributor to poor mark selection. Fixed: the DOM-priority path now builds
+one ordered candidate list (DOM elements first, then OmniParser) and renders
+it through `apply_som(preserve_order=True)` — the same renderer that
+produced the training data.
+
+### click_visualizer.py: coordinate-guided mark resolution
+Point resolution previously trusted the model's literal "Mark: N" text
+first, falling back to coordinate parsing only if no mark was found. Given
+the documented residual Mark:0 bias, that ordering can let a biased literal
+mark ID override an otherwise-correct coordinate guess. Flipped the
+priority: parse the coordinate first, snap it to the nearest mark within
+`NEAREST_MARK_MAX_DIST = 0.15` (normalized euclidean) via new `_nearest_mark()`
+helper, and only fall back to the literal mark text if no coordinate parsed
+at all. Explicitly flagged in the code as a demo-time workaround, not a
+model fix — changes what "grounding accuracy" measures for this checkpoint
+if these numbers ever feed back into `eval.py` or the results table.
+
+### Planner+executor prototype (tests/planner_agent.py)
+New minimal loop: a single loaded model instance switches roles via PEFT's
+`disable_adapter()` context manager — base Qwen (adapter disabled) plans the
+next action as one of `SEARCH("query")` / `CLICK("description")` /
+`SCROLL("down")` / `DONE("summary")`; fine-tuned Qwen (adapter re-enabled)
+grounds `CLICK` targets to coordinates via the existing `DemoRunner.act()`
+path. One process, one model in memory — avoids the double-VRAM cost and a
+previously-confirmed-buggy `load_adapter`/`unload` path.
+`SEARCH` is handled DOM-direct (same pattern as `web_agent.py`'s `search`
+command), not via the VLM.
+
+Validated the mechanism itself before building on it:
+- `tests/smoke_disable_adapter.py`: standalone check that
+  `model.disable_adapter()` on the 4-bit quantized adapter actually toggles
+  behavior (adapter-on / adapter-off / adapter-on-again outputs compared) —
+  confirmed working and stable, safe to build the planner on.
+- `tests/smoke_planning_prompt.py`, `smoke_planning_prompt_case2.py`,
+  `smoke_planning_v2.py`: iterated on the planning prompt in isolation (no
+  browser loop) across two phrasings, checking specifically whether the
+  model uses the `history` list to avoid re-issuing a completed `SEARCH`
+  once results are already on screen, rather than just pattern-matching the
+  goal text. These are interactive smoke scripts (print output for manual
+  inspection) — no automated pass/fail or saved result; outcome wasn't
+  captured back into this log during the session.
+- `tests/grab_search_screenshot.py`: one-off helper to save a real Amazon
+  search-results screenshot for the above prompt tests to run against
+  offline, without needing a live browser per iteration.
+
+---
+
+## Current Status
+
+```
+DOM link/JS-clickable detection : FIXED (a[href], role=link/button, onclick)
+DOM-priority SoM rendering      : FIXED (now goes through apply_som, matches training)
+Mark resolution                 : coordinate-guided (nearest-mark snap) over literal text
+Planner+executor prototype      : BUILT (tests/planner_agent.py), disable_adapter()
+                                    mechanism validated, prompt still being iterated
+```
+
+---
+
+## Next
+1. Decide on a planning prompt phrasing and get `planner_agent.py` running
+   end-to-end on a real multi-step task (not just isolated prompt checks).
+2. Investigate the coordinate-bias pattern surfaced during live testing
+   this week — see next entry.
+
+---
+
+### 2026-07-09 to 2026-07-11 — Live coordinate-bias investigation (in progress, uncommitted)
+
+## Goal
+During interactive runs of the planner/demo agent against real Amazon pages
+(manual sessions, not a committed script), certain grounding tasks kept
+resolving to "no mark nearby" or to visibly wrong points. Characterize
+whether this is ordinary per-page noise or a systematic bias before
+spending more time on the planner loop.
+
+---
+
+## Observed (local only — outputs/ is gitignored, not in git history)
+
+`outputs/click_coordinate_log.csv` accumulated ~30 rows from manual
+interactive runs between 2026-07-09 and 2026-07-11 (task, raw parsed
+coordinate, resolved mark, accept/reject). Pattern: the task "the first
+product in the search results" repeatedly produced a raw coordinate in a
+narrow band (~x=0.35–0.45, y=0.38–0.42) across visibly different search
+result pages, and was marked `rejected_no_mark` in the majority of those
+rows (no placed mark fell within snapping distance). "The yellow Add to
+cart button" showed a similar narrow-band pattern on a different but also
+fairly consistent coordinate.
+
+**Note:** the code that wrote this CSV is not in the current tree — it
+isn't produced by anything in `src/` as of this check (`grep -rn
+click_coordinate_log src/` returns nothing). It was most likely inline
+/interactive logging from a manual session that was never saved as a
+script. If this investigation continues, that logging needs to be rebuilt
+as a proper script rather than relying on the existing CSV alone.
+
+## Completed (uncommitted — `git status` shows these as untracked as of
+this check; not yet added to git)
+
+- `tests/smoke_coordinate_bias.py`: runs one fixed task against every
+  screenshot in a folder (static images, `dom_elements=None`) and prints
+  the raw parsed coordinate per image, plus a spread check (Δx/Δy across
+  images) to distinguish "fixed-point bias" from "coincidentally similar
+  page layouts." Docstring records that two runs (Wimpy Kid, Odyssey pages)
+  both produced the exact same coordinate `(0.62, 0.71)` with the same
+  nearest-mark distance to the real Add to cart button — motivated this
+  script.
+- `tests/smoke_coordinate_bias_live.py`: live-browser follow-up. The static
+  version passed `dom_elements=None`, which disables the DOM-priority
+  rebuild entirely — so it couldn't tell whether the collapsed raw
+  coordinate would still land near the real button once the DOM-priority
+  boost (which normally promotes "Add to cart" into the mark set) is
+  actually active. This version navigates real Amazon search pages via
+  `BrowserEnv`, extracts real DOM elements, and passes them through exactly
+  as `planner_agent.py`'s `ground_click()` does.
+- `tests/smoke_dom_elements_search_page.py`: pure-DOM dump, no model
+  loaded — checks whether product-title `<a>` links even survive
+  `_rebuild_som_dom_priority()`'s tier ranking (text inputs → buttons →
+  everything else) and the `max_marks=15` cap. Flags a real capacity
+  concern independent of the coordinate-bias question: product links rank
+  in the lowest tier, so on pages with many buttons/inputs they can be
+  pushed past the cap before the grounding model ever sees them as a mark.
+
+**Status: investigation in progress, not concluded.** The static-screenshot
+script's docstring already treats the fixed-point pattern as "confirmed";
+the live-browser script exists specifically to confirm it holds under real
+DOM-boost conditions, but there's no result recorded in this log for that
+run. This is a plausible second, distinct bias — separate from the already
+-fixed Mark:0 *text* collapse (that was in the literal "Mark: N" output;
+this appears to be in the raw *(x, y)* coordinate output) — but treat it as
+a working hypothesis, not a confirmed root cause, until the live script's
+output is reviewed and written up.
+
+---
+
+## Next
+1. Run `smoke_coordinate_bias_live.py`, review the spread output, and write
+   the actual conclusion back into this devlog (this entry was written from
+   the scripts' docstrings and a partial local CSV, not a confirmed result).
+2. If confirmed: root-cause the raw-coordinate bias (data distribution?
+   instruction-phrasing artifact? something in the fine-tune itself?) before
+   trusting `click_visualizer`'s coordinate-first resolution order (added
+   2026-07-09, see previous entry) as a real fix rather than a patch over a
+   symptom.
+3. Commit the three smoke scripts (currently untracked) once the
+   investigation's conclusion is written up alongside them.
+4. Rebuild `click_coordinate_log.csv`'s logging as a real script if this
+   investigation continues — the version that produced the existing CSV
+   isn't in the tree.

@@ -366,17 +366,31 @@ Completed:
   screenshots (using the now-stale models/lora_adapter/ — needs
   re-pointing at models/lora_adapter_v2/ once full eval confirms it)
 
+**Update 2026-07-09/11:** Full eval on `lora_adapter_v2` is now complete —
+17.4% click accuracy, 10.3% on `gt_mark!=0` (see Results below). Two
+further Kaggle retrain attempts (`lora_adapter_full`, `lora_adapter_full_v2`)
+both regressed relative to it and are not currently explained.
+`click_visualizer.py`'s DOM-priority rebuild now renders through the real
+training renderer (`apply_som(preserve_order=True)`) instead of a diverged
+dot-style drawer, DOM extraction now catches plain links/JS-clickables, and
+point resolution is coordinate-first (nearest-mark snap) rather than
+trusting literal "Mark: N" text. A planner+executor prototype
+(`tests/planner_agent.py`) exists but is not yet validated end-to-end. A
+possibly-distinct raw-coordinate bias (separate from the fixed Mark:0 text
+collapse) is under investigation, uncommitted. See devlog.md 2026-07-02
+(continued further) and 2026-07-09 entries for full detail.
+
 Current focus:
-- Run full finetuned eval on `models/lora_adapter_v2` and record the
-  compare-vs-baseline_v2 delta (this is the number that goes in the
-  Results table below and in the demo presentation)
+- Decide on the `lora_adapter_full`/`lora_adapter_full_v2` regression:
+  root-cause it (`sweep_checkpoints.py` exists, not yet run to completion)
+  or report `lora_adapter_v2` as the result and move on
+- Land the coordinate-bias investigation: run
+  `smoke_coordinate_bias_live.py`, write up the conclusion, commit the
+  three untracked smoke scripts
 - Statistical validation pass on conversations.jsonl (still open, not
   blocking)
-- Re-point click_visualizer.py / inference_server.py / web_agent.py demo
-  stack at lora_adapter_v2 once the full eval confirms it's solid
-- Re-evaluate whether the DOM-priority SoM rebuild workaround (which
-  exploited the Mark:0 bias rather than fixing it) is still needed now
-  that the root cause is fixed, or can be simplified
+- Fix the `max_marks=15` cap risk for product/content links flagged by
+  `smoke_dom_elements_search_page.py`
 - Obtain Magma-8B reference numbers (live Kaggle run if time allows
   before the demo; otherwise cite paper-reported figures, clearly
   labeled as such rather than reproduced)
@@ -445,28 +459,64 @@ across both means the model isn't just defaulting to the first answer.
 
 ### Results
 
-| Mode                          | Samples evaluated | Click accuracy | gt_mark==0 | gt_mark!=0 |
-|--------------------------------|--------------------|-----------------|------------|------------|
-| baseline (old, Mark-0-only)   | 402 / 500          | 1.7% *(superseded)* | —      | —          |
-| baseline (v2, fixed eval)     | 80 / 100           | 0.0%            | 0.0%       | 0.0%       |
-| smoke finetuned (200 pages)   | 80 / 100           | 27.5%           | 37.0%      | 22.6%      |
-| full finetuned (728 pages)    | —                  | TBD             | TBD        | TBD        |
-| Magma-8B                      | —                  | TBD             | TBD        | TBD        |
+| Mode                                | Samples evaluated | Click accuracy | gt_mark==0 | gt_mark!=0 |
+|--------------------------------------|--------------------|-----------------|------------|------------|
+| baseline (old, Mark-0-only)         | 402 / 500          | 1.7% *(superseded)* | —      | —          |
+| baseline (v2, fixed eval)           | 80 / 100           | 0.0%            | 0.0%       | 0.0%       |
+| smoke finetuned (200 pages)         | 80 / 100           | 27.5%           | 37.0%      | 22.6%      |
+| **full finetuned (728 pages, lora_adapter_v2)** | 161 / 200 | **17.4%**  | **35.6%**  | **10.3%**  |
+| retrain attempt 2 (lora_adapter_full) | 161 / 200        | 2.5% *(regressed)* | 6.7%    | 0.9%       |
+| retrain attempt 2, ckpt_800          | 47 / 60            | 4.3% *(regressed)* | —      | —          |
+| retrain attempt 3 (lora_adapter_full_v2) | 161 / 200      | 11.2% *(regressed)* | 17.8% | 8.6%       |
+| Magma-8B                            | —                  | TBD             | TBD        | TBD        |
 
-Interpretation: the smoke-test result is the key evidence that the
-Mark:0 collapse is fixed — a still-collapsed model would show
-`gt_mark!=0` accuracy near 0% (predicting Mark 0's location essentially
-never falls inside a different element's bbox by chance); 22.6% is
-clearly not that. The mark0-vs-non0 gap (37.0% vs 22.6%) that remains
-is a plausible ordinary pattern (header/logo/nav elements at Mark 0 tend
-to be more visually distinctive), not the collapse signature.
+**`lora_adapter_v2` (728-page retrain) is the reportable result.** Two
+further retrain attempts on Kaggle (2026-07-02/03) both scored worse on
+every metric — attempt 2 also spiked no-prediction rate to 25% (vs 3% for
+`lora_adapter_v2`). Root cause of the regression is not diagnosed; training
+happened on Kaggle notebooks with no log checked into this repo. See
+devlog.md 2026-07-02/03 (continued further) for detail. Unless this gets
+root-caused, cite `lora_adapter_v2` / `eval_full_finetuned.json`, not the
+later attempts, in the writeup.
+
+Interpretation: the smoke-test result (200-page) was the first evidence
+that the Mark:0 collapse is fixed; the 728-page `lora_adapter_v2` result
+confirms it holds at full retrain scale — a still-collapsed model would
+show `gt_mark!=0` accuracy near 0% (predicting Mark 0's location essentially
+never falls inside a different element's bbox by chance), and 10.3% is
+clearly not that. The mark0-vs-non0 gap that persists across every
+finetuned row (e.g. 35.6% vs 10.3% for `lora_adapter_v2`) is a plausible
+ordinary pattern (header/logo/nav elements at Mark 0 tend to be more
+visually distinctive), not the collapse signature.
 
 ### Results location
 results/eval_baseline.json          ← superseded (Mark-0-only methodology)
 results/eval_baseline_v2.json       ← complete (fixed methodology)
 results/eval_smoke_finetuned.json   ← complete (200-page smoke test)
-results/eval_full_finetuned.json    ← pending (728-page full retrain)
+results/eval_full_finetuned.json    ← complete (lora_adapter_v2, 728-page retrain) — BEST RESULT
+results/eval_true_full_finetuned.json ← complete (lora_adapter_full, attempt 2) — regressed
+results/eval_ckpt_800.json          ← complete (attempt 2, step 800 checkpoint) — regressed
+results/eval_full_finetuned_v2.json ← complete (lora_adapter_full_v2, attempt 3) — regressed
 results/eval_magma.json             ← pending
+
+**Gap:** none of the above JSONs record which adapter path produced them
+(`eval.py` saves `run`/`mode` only) — the mapping above was reconstructed
+from file mtimes, not read directly off disk. TODO: add an `"adapter"`
+field to `eval.py`'s saved output.
+
+### eval.py — compare() and per-page sampling (updated 2026-07-03)
+`compare()` no longer takes a fixed baseline/finetuned pair; it accepts
+`--jsons <path> [<path>...]` (any number of result files) and prints one
+row per run, sorted by click accuracy, now including the `gt_mark==0`/
+`gt_mark!=0` columns in the printed table (previously only in the saved
+JSON, not surfaced in `compare()`'s output).
+
+Per-page element sampling reseeded on the image filename stem
+(`_stable_seed()`, md5-based) instead of the row index in val.jsonl —
+index-based seeding wasn't a stable identity across runs if val.jsonl was
+ever regenerated/reordered (it was, earlier in this project). **Runs from
+before this patch and after it should not be mixed in one `compare()`
+table** — the element sampled per page can differ.
 
 ## Demo pipeline architecture
 
@@ -633,22 +683,33 @@ no text, no icon). YOLO and OCR both miss them.
 
 Solution: query the live DOM via Playwright JS before each inference.
 
-BrowserEnv.get_interactive_elements() returns:
+BrowserEnv.get_interactive_elements() returns (updated 2026-07-09 — see
+below):
 ```python
 [
   {
     "tag":       "input",
     "type":      "text",
-    "label":     "Search Amazon.in",   # placeholder / aria-label / name / id
+    "label":     "Search Amazon.in",   # placeholder / aria-label / name / id / innerText
     "bbox_norm": [x1, y1, x2, y2]     # normalised to [0,1] over viewport
   },
   ...
 ]
 ```
 
-Queried selectors:
+Queried selectors (extended 2026-07-09):
   input:not([type="hidden"]), textarea, select, button,
-  [role="searchbox"], [role="combobox"], [role="textbox"]
+  a[href], [role="searchbox"], [role="combobox"], [role="textbox"],
+  [role="link"], [role="button"], [onclick]
+
+**2026-07-09 change:** previously had no `<a>` tag or `[onclick]` in the
+selector, meaning plain nav links (e.g. "Hello, sign in") and JS-driven
+fake-buttons were invisible to DOM extraction entirely — root-caused as
+the reason the agent couldn't target them. Also added: `disabled` /
+`aria-disabled="true"` filtering, and an `innerText`/`textContent`
+fallback (trimmed, capped 60 chars) for the `label` field, since links and
+JS-clickables usually carry their label as visible text rather than
+`placeholder`/`name`.
 
 Invisible elements filtered: display:none, visibility:hidden, opacity:0,
 elements outside viewport.
@@ -664,11 +725,88 @@ DOM elements first (_rebuild_som_dom_priority):
 This converts the model's Mark:0 bias from a bug into a feature: the
 search bar is always Mark 0, so "Mark: 0" responses click correctly.
 
-DOM elements drawn with blue bounding-box outline + red circle marker
-(blue distinguishes them from OmniParser detections visually).
+**2026-07-09 change:** the rebuild now renders through
+`apply_som(preserve_order=True)` (`src.som.render_som`) — the same
+box-outline + corner-label renderer used to produce training data —
+instead of a separate dot-style drawer (`_draw_som_mark`/`_inject_dom_mark`)
+that had silently diverged from the training format since the 2026-07-02
+box-outline rework (that rework landed in `render_som.py` but was never
+ported into this function until now). `apply_som` gained a
+`preserve_order` param for this: when `True`, it skips the area-descending
+sort and places elements in the order given, so DOM-priority ordering maps
+directly onto the lowest mark IDs.
+
+DOM elements drawn with blue bounding-box outline + box-outline mark
+(previously a dot; see above).
 
 **NOTE (2026-07-02):** this was a workaround built around the Mark:0
 bias, not a fix for it — see devlog.md 2026-06-25. Now that the actual
 root cause (training data format) is confirmed and fixed, it's worth
 re-evaluating whether this rebuild is still necessary or can be
 simplified once lora_adapter_v2 is validated (see Current Focus above).
+
+**Known cap risk (2026-07-09/10):** product/content `<a>` links rank in
+DOM-priority tier 2 (lowest, after inputs and buttons). On pages with many
+buttons/inputs, `tests/smoke_dom_elements_search_page.py` confirmed
+plausible product-title links can be pushed past `max_marks=15` before the
+grounding model ever sees them as a mark. Not yet fixed.
+
+### Point resolution — coordinate-first, mark-text fallback (2026-07-09)
+`click_visualizer.py`'s `act()` previously trusted the model's literal
+"Mark: N" text first, falling back to coordinate parsing only if no mark
+was found. Given the documented residual Mark:0 bias in that literal text
+channel, this let a biased mark ID override an otherwise-correct
+coordinate guess. Flipped: parse the raw `(x, y)` first, snap it to the
+nearest placed mark within `NEAREST_MARK_MAX_DIST = 0.15` (normalized
+euclidean distance) via new `_nearest_mark()`, and only fall back to the
+literal mark text if no coordinate parsed at all. Explicitly flagged in
+code as a demo-time workaround, not a model fix — changes what "grounding
+accuracy" measures for this checkpoint if these numbers ever feed
+`eval.py` or the results table above.
+
+### Planner + executor prototype (new, 2026-07-09)
+`tests/planner_agent.py`: a minimal multi-step loop built on top of the
+existing single-shot grounding pipeline. One model instance, one process —
+role-switches via PEFT's `disable_adapter()` context manager instead of
+loading two model copies or using the confirmed-buggy `load_adapter`/
+`unload` path:
+
+  Planner  = base Qwen (adapter disabled) → picks next action
+  Executor = fine-tuned Qwen (adapter enabled) → grounds CLICK targets
+             via the existing DemoRunner.act() path
+
+Action grammar (regex-parsed from the planner's raw text response):
+```
+SEARCH("query")
+CLICK("description of element")
+SCROLL("down")
+DONE("summary")
+```
+`SEARCH` is handled DOM-direct (find first visible text input, clear,
+type, submit) — same pattern as `web_agent.py`'s `search` command, not
+routed through the VLM. `CLICK` calls `runner.act()` with live DOM
+elements from `browser.get_interactive_elements()`. Loop runs up to
+`MAX_STEPS = 6`, maintaining a `history` list appended to the planning
+prompt each step so the model can (in principle) avoid repeating a
+completed action.
+
+**Status:** the `disable_adapter()` toggle mechanism is validated
+(`tests/smoke_disable_adapter.py` — adapter-on / adapter-off /
+adapter-on-again outputs compared, confirmed stable). The planning prompt
+itself is still being iterated (`smoke_planning_prompt.py`,
+`smoke_planning_prompt_case2.py`, `smoke_planning_v2.py`) — specifically
+testing whether the model actually uses the `history` list rather than
+just pattern-matching the goal text — but no end-to-end run of the full
+loop against a live multi-step task has been recorded yet.
+
+### Coordinate-bias investigation (in progress, uncommitted, 2026-07-09/11)
+Manual live-agent testing surfaced a pattern distinct from the (already
+-fixed) Mark:0 *text* collapse: the model's raw `(x, y)` coordinate output
+appears to cluster around a near-fixed point for certain instruction
+phrasings, largely independent of actual page content — e.g. "the yellow
+Add to cart button" reportedly produced the same coordinate `(0.62, 0.71)`
+on two visually different product pages. Three untracked scripts exist to
+characterize this (`tests/smoke_coordinate_bias.py`, `smoke_coordinate_bias_live.py`,
+`smoke_dom_elements_search_page.py`) — see devlog.md 2026-07-09 to 07-11
+for detail. **Not yet confirmed as a root cause** — treat as a working
+hypothesis pending review of the live-browser script's output.
