@@ -3,12 +3,16 @@
 Interactive web agent — wires BrowserEnv (Playwright) and the inference
 server (OmniParser + Qwen) into a live browser agent loop.
 
-The inference server must already be running before starting this script:
+The inference server must already be running before starting this script —
+either locally:
     python -m src.agent.inference_server --mode finetuned --lora models/lora_adapter --port 8787
+
+...or remotely (e.g. Kaggle T4/P100 + ngrok tunnel — see SERVER_URL below).
 
 Usage:
     python -m src.agent.web_agent --url https://www.google.com
     python -m src.agent.web_agent --url https://www.google.com --port 8787 --headless
+    python -m src.agent.web_agent --url https://www.google.com --server-url https://xxxx.ngrok-free.app
 
 Commands at the interactive prompt:
     <any text>      Send as a click task to the agent
@@ -40,6 +44,20 @@ from src.agent.browser_env import BrowserEnv, ScreenshotResult
 log = logging.getLogger(__name__)
 
 SCREENSHOT_DIR = Path("outputs/browser")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Inference server location
+# ══════════════════════════════════════════════════════════════════════════════
+# LOCAL (default) — inference server running on this same machine.
+# SERVER_URL = "http://127.0.0.1:8787"
+
+# REMOTE — Kaggle T4/P100 + ngrok tunnel. To switch: comment out the LOCAL
+# line above, uncomment this one, and paste in your current ngrok URL
+# (it's ephemeral — changes every time the Kaggle notebook restarts).
+SERVER_URL = "https://plop-isolated-blinked.ngrok-free.dev"
+
+# Can also be overridden per-run with --server-url without editing this file.
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -111,7 +129,7 @@ class WebAgent:
     """
     Interactive web agent.
 
-    Owns a BrowserEnv (Playwright) and an InferenceClient (localhost HTTP).
+    Owns a BrowserEnv (Playwright) and an InferenceClient (local or remote HTTP).
     On each task:
       1. Screenshot the current browser viewport
       2. Send PNG + task to inference server
@@ -264,7 +282,9 @@ class WebAgent:
                       if len(dom_elements) > 4
                       else f"  DOM elements: {[e['label'] for e in dom_elements]}")
 
-            # 3. Infer
+            # 3. Infer  (this timing already covers the full round-trip to
+            #    whichever server SERVER_URL points at — local or remote —
+            #    so this is the real number to compare local-vs-Kaggle latency)
             print(f"  sending to inference server (attempt {attempt})...")
             t0 = time.time()
             result = self.client.act(ss.png_bytes, task, dom_elements=dom_elements)
@@ -403,7 +423,13 @@ def main():
     parser.add_argument("--url",      default=None,
                         help="URL to open on start (optional)")
     parser.add_argument("--port",     type=int, default=8787,
-                        help="Inference server port (default: 8787)")
+                        help="Inference server port — only used when --server-url "
+                             "is not given and SERVER_URL above is left as localhost "
+                             "(default: 8787)")
+    parser.add_argument("--server-url", default=None,
+                        help="Full inference server URL, overrides the SERVER_URL "
+                             "constant above without editing the file — e.g. "
+                             "a Kaggle+ngrok URL like https://xxxx.ngrok-free.app")
     parser.add_argument("--headless", action="store_true", default=False,
                         help="Run browser headless (default: visible)")
     parser.add_argument("--no-save",  action="store_true",
@@ -417,7 +443,15 @@ def main():
     # suppress noisy PIL debug logs
     logging.getLogger("PIL").setLevel(logging.WARNING)
 
-    server_url = f"http://127.0.0.1:{args.port}"
+    # Resolution order: --server-url flag > SERVER_URL constant above.
+    # If SERVER_URL was left as the default localhost AND --port was given,
+    # --port still applies (keeps old `--port` behavior working unchanged).
+    if args.server_url:
+        server_url = args.server_url
+    elif SERVER_URL == "http://127.0.0.1:8787":
+        server_url = f"http://127.0.0.1:{args.port}"
+    else:
+        server_url = SERVER_URL
 
     print(f"\nmagma-repro web agent")
     print(f"  server : {server_url}")

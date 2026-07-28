@@ -8,7 +8,8 @@ Usage:
 
     python -m src.agent.inference_server --mode baseline --port 8787
 
-POST /act  { "image_b64": "<base64 PNG>", "task": "click X" }
+POST /act    { "image_b64": "<base64 PNG>", "task": "click X" }
+POST /plan   { "image_b64": "<base64 PNG>", "prompt": "<fully-formatted planning prompt>" }
 GET  /health
 """
 
@@ -16,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import io
 import logging
 import re
 import sys
@@ -24,7 +26,6 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
@@ -58,6 +59,14 @@ class ActResponse(BaseModel):
     elements:     List[ElementInfo]
     error:        Optional[str] = None
 
+class PlanRequest(BaseModel):
+    image_b64: str
+    prompt:    str   # fully-formatted planning prompt (goal + history baked in client-side)
+
+class PlanResponse(BaseModel):
+    raw_response: str
+    error:        Optional[str] = None
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # DemoRunner patch — expose _last_content_list
@@ -77,6 +86,7 @@ def build_app(mode: str, lora_path: Optional[str]) -> FastAPI:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     _patch_demo_runner()
     from src.agent.click_visualizer import DemoRunner
+    from PIL import Image
 
     log.info("Loading models for mode='%s'...", mode)
     runner = DemoRunner(
@@ -146,6 +156,44 @@ def build_app(mode: str, lora_path: Optional[str]) -> FastAPI:
             elements=elements,
             error=error_msg,
         )
+
+    @app.post("/plan")
+    def plan(req: PlanRequest) -> PlanResponse:
+        """
+        Planning-only endpoint: runs the BASE model (adapter disabled via
+        PEFT's disable_adapter() context manager) on a raw image + prompt,
+        with no OmniParser/SoM/mark-lookup involved.
+
+        Mirrors exactly what tests/planner_agent.py's plan_next_action()
+        did in-process before this split — the planner step here (base
+        model) and the executor step at /act (fine-tuned adapter, full
+        grounding pipeline) share the SAME loaded model instance
+        server-side. No double VRAM, no load_adapter/unload bug — the
+        property the original in-process design was built to preserve,
+        just moved across a network call instead of a Python function call.
+
+        Requires the server to have been started with --mode finetuned
+        (an adapter must be loaded for disable_adapter() to have anything
+        to disable). If started with --mode baseline, this endpoint still
+        works, but disable_adapter() is effectively a no-op — /plan and
+        /act would behave identically since there's no adapter either way.
+        """
+        try:
+            png_bytes = base64.b64decode(req.image_b64)
+        except Exception as exc:
+            return PlanResponse(raw_response="", error=f"Bad base64: {exc}")
+
+        try:
+            image = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+            if hasattr(runner._qwen, "disable_adapter"):
+                with runner._qwen.disable_adapter():
+                    raw_response = runner._run_qwen(image, req.prompt)
+            else:
+                raw_response = runner._run_qwen(image, req.prompt)
+            return PlanResponse(raw_response=raw_response)
+        except Exception as exc:
+            log.exception("Planning error")
+            return PlanResponse(raw_response="", error=str(exc))
 
     return app
 
