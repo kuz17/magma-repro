@@ -16,6 +16,18 @@ Usage:
         --lora models/lora_adapter \
         --tag finetuned \
         --training-style
+
+    # fused adapter (single-call planner+executor) — see act_fused() below;
+    # can be loaded solo (--lora models/lora_adapter_fused, no --fused-lora)
+    # or alongside the smoke adapter (--lora models/lora_adapter_smoke
+    # --fused-lora models/lora_adapter_fused) for a future dual-adapter
+    # comparison once VRAM allows it (e.g. on Kaggle).
+    python -m src.agent.click_visualizer \
+        --image outputs/demo/screenshot.png \
+        --interactive \
+        --lora models/lora_adapter_fused \
+        --tag fused \
+        --training-style
 """
 
 from __future__ import annotations
@@ -23,6 +35,7 @@ from __future__ import annotations
 import argparse
 import base64
 import io
+import json
 import re
 import sys
 from pathlib import Path
@@ -48,7 +61,7 @@ FONT_SIZE      = 16
 YOLO_THRESHOLD = 0.10   # lowered from 0.25; 0.05 caused Florence-2 to caption 100+ elements on CPU
 OCR_THRESHOLD  = 0.75   # lowered from 0.92; 0.50 produced garbage OCR on anti-aliased text
 IOU_THRESHOLD  = 0.4
-MAX_ELEMENTS   = 35
+MAX_ELEMENTS   = 50 #50
 
 # ── mark resolution config ───────────────────────────────────────────────
 # Max normalised distance between a parsed coordinate and a mark's center
@@ -76,6 +89,137 @@ RAW_PROMPT_TEMPLATE = (
     "Respond with ONLY the format: Coordinate: (x, y) "
     "where x and y are normalized 0 to 1."
 )
+
+# ── fused adapter (single-call planner+executor) ───────────────────────
+# Prompt confirmed verbatim from MagmaAI/Magma-Mind2Web-SoM training examples.
+# "convinience" is a genuine typo in Magma's own training data — kept as-is
+# intentionally, since the model was trained on this exact spelling.
+FUSED_PROMPT_TEMPLATE = (
+    'Imagine that you are imitating humans doing web navigation for a task step by step. '
+    'At each stage, you can see the webpage like humans by a screenshot and know the previous '
+    'actions before the current step decided by yourself through recorded history. You need to '
+    'decide on the following action to take. You can click an element with the mouse, select an '
+    'option, or type text with the keyboard. The output format should be a dictionary like: \n'
+    '"{{"ACTION": "CLICK" or "TYPE" or "SELECT", "MARK": a numeric id, e.g., 5, "VALUE": a string '
+    'value for the action if applicable, otherwise None}}".\n'
+    'You are asked to complete the following task: {task} The previous actions you have taken: \n\n'
+    '{history}'
+    'For your convinience, I have labeled the candidates with numeric marks and bounding boxes on '
+    'the screenshot. What is the next action you would take?'
+)
+
+
+def dom_element_to_mind2web_type(tag: str, input_type: str = "", label: str = "") -> str:
+    """
+    Maps live DOM tag/type info to the semantic element-type vocabulary
+    Mind2Web training data actually uses in history entries (e.g. "[link]",
+    "[searchbox]", "[input]") -- NOT raw HTML tag names.
+
+    Confirmed via a real training example (a MagmaAI/Magma-Mind2Web-SoM
+    row, history using "[link] Store Locator -> CLICK", "[searchbox]
+    SEARCH BY KEYWORD -> TYPE: Chicago", etc.) that this vocabulary
+    produces a correct mark prediction across every checkpoint tested
+    (400 through 825 steps). get_interactive_elements() instead returns
+    raw tagName ("a", "input", "button") -- a vocabulary the model never
+    saw paired with this prompt during training. This mismatch is the
+    most likely explanation for the task-blind mark collapse observed on
+    live Amazon pages (same page + different task -> identical mark,
+    consistent across the entire training arc), since the model DOES
+    discriminate correctly when history matches training shape.
+    """
+    tag = (tag or "").lower()
+    input_type = (input_type or "").lower()
+
+    if tag == "a":
+        return "link"
+    if tag == "button" or input_type in ("submit", "button"):
+        return "button"
+    if tag == "select":
+        return "combobox"
+    if tag in ("input", "textarea"):
+        if "search" in input_type or "search" in (label or "").lower():
+            return "searchbox"
+        if input_type in ("checkbox", "radio"):
+            return input_type
+        return "textbox"
+    # Fallback: pass the raw tag through rather than guessing wrong --
+    # better to surface an unmapped tag visibly than silently mislabel it.
+    return tag
+
+
+def format_fused_history(history: list[dict]) -> str:
+    """
+    Format prior actions for the fused adapter's history block.
+
+    Each entry: {"tag": "tab", "label": "Monthly", "action": "CLICK", "value": None}
+                {"tag": "textbox", "label": "Search for parking", "action": "TYPE", "value": "Chicago"}
+
+    "tag" here is expected to already be a Mind2Web-style semantic type
+    (e.g. "link", "searchbox", "button", "combobox"), not a raw HTML tag
+    name — see dom_element_to_mind2web_type() for the translation. This
+    function itself just formats whatever string it's given.
+
+    CLICK/SELECT actions omit the value entirely: "[tab]  Monthly -> CLICK"
+    TYPE actions include it:                      "[textbox]  Search for parking -> TYPE: Chicago"
+    """
+    if not history:
+        return "\n"
+    lines = []
+    for h in history:
+        if h["action"] == "TYPE":
+            lines.append(f'[{h["tag"]}]  {h["label"]} -> TYPE: {h["value"]}')
+        else:  # CLICK or SELECT
+            lines.append(f'[{h["tag"]}]  {h["label"]} -> {h["action"]}')
+    return "\n".join(lines) + "\n"
+
+
+def parse_fused_action(response: str) -> dict | None:
+    """
+    Parse the fused adapter's raw JSON-dict response into a structured
+    action. Returns None if no JSON object could be parsed at all.
+    """
+    m = re.search(r'\{.*\}', response, re.DOTALL)
+    if not m:
+        return None
+    try:
+        parsed = json.loads(m.group(0))
+        return {
+            "action": parsed.get("ACTION"),
+            "mark": int(parsed["MARK"]) if str(parsed.get("MARK", "")).isdigit() else None,
+            "value": parsed.get("VALUE"),
+        }
+    except (json.JSONDecodeError, KeyError, ValueError):
+        return None
+
+
+def _check_fused_label_sanity(task: str, mark_id: int, content_list: list) -> None:
+    """
+    Cheap diagnostic: does the resolved mark's OmniParser-detected label
+    share any meaningful word with the task description? If not, print a
+    loud warning — doesn't block the click, just makes a likely-wrong
+    resolution visible instead of silent.
+
+    Not a real fix for mark-order mismatch between OmniParser's rendering
+    and whatever ordering Magma's own SoM pipeline used during training —
+    confirmed via real-page testing that this mismatch exists (fused
+    adapter resolved to an unrelated nav element instead of the intended
+    product). This is just a tripwire so a wrong resolution is visible in
+    the logs rather than silently clicked.
+    """
+    if mark_id is None or mark_id >= len(content_list):
+        return
+    label = str(content_list[mark_id].get("content") or "").lower()
+    if not label:
+        return
+
+    stopwords = {"the", "a", "an", "to", "for", "of", "in", "on", "book",
+                 "click", "add", "cart", "button", "page"}
+    task_words = {w for w in re.findall(r"[a-z]+", task.lower()) if w not in stopwords and len(w) > 2}
+    label_words = {w for w in re.findall(r"[a-z]+", label) if w not in stopwords and len(w) > 2}
+
+    if task_words and not (task_words & label_words):
+        print(f"  ⚠ SANITY CHECK: mark {mark_id}'s label {label!r} shares no "
+              f"keywords with task {task!r} — resolution may be wrong.")
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -207,12 +351,14 @@ class DemoRunner:
         raw_mode: bool = False,
         tag: str = "",
         training_style: bool = False,
+        fused_lora_path: str | None = None,
     ):
         self.raw_mode           = raw_mode
         self.tag                = tag
         self.training_style     = training_style  # True = fine-tuned mode
+        self.has_fused          = fused_lora_path is not None
         self._last_content_list = []
-        self._load_qwen(lora_path)
+        self._load_qwen(lora_path, fused_lora_path)
         if not raw_mode:
             self._load_omniparser()
 
@@ -236,7 +382,7 @@ class DemoRunner:
         )
         print("OmniParser ready.")
 
-    def _load_qwen(self, lora_path: str | None):
+    def _load_qwen(self, lora_path: str | None, fused_lora_path: str | None = None):
         import torch
         from transformers import (
             AutoProcessor,
@@ -260,8 +406,14 @@ class DemoRunner:
         if lora_path:
             from peft import PeftModel
             print(f"Loading LoRA adapter: {lora_path}")
-            self._qwen = PeftModel.from_pretrained(self._qwen, lora_path)
+            self._qwen = PeftModel.from_pretrained(self._qwen, lora_path, adapter_name="default")
             print("Adapter loaded.")
+
+            if fused_lora_path:
+                print(f"Loading fused adapter: {fused_lora_path}")
+                self._qwen.load_adapter(fused_lora_path, adapter_name="fused")
+                self._qwen.set_adapter("default")  # stay on smoke adapter until explicitly switched
+                print("Fused adapter loaded alongside default.")
 
         self._processor = AutoProcessor.from_pretrained(QWEN_PATH)
         label = f"fine-tuned [{lora_path}]" if lora_path else "base"
@@ -285,6 +437,19 @@ class DemoRunner:
             use_paddleocr=False,
         )
         text, ocr_bbox = ocr_result
+        if ocr_bbox is None:
+            # check_ocr_box returns ocr_bbox=None (not an empty list) when
+            # zero text boxes are detected on the page -- confirmed live:
+            # a near-blank/transitional page (landed on after a wrong
+            # click sent the agent somewhere unintended) produced
+            # "OCR boxes : 0" / "no ocr bbox!!!" from OmniParser's own
+            # logging, and get_som_labeled_img's
+            # `zip(ocr_bbox, ocr_text)` then crashed with
+            # `TypeError: 'NoneType' object is not iterable` since zip()
+            # can't iterate None. Guarding here lets the pipeline continue
+            # with zero OCR-detected elements (YOLO icon detections still
+            # proceed normally) instead of crashing the whole request.
+            text, ocr_bbox = [], []
         print(f"  OCR boxes : {len(text)}", flush=True)
 
         encoded, label_coords, content_list = self._get_som_labeled_img(
@@ -311,11 +476,6 @@ class DemoRunner:
         self._raw_label_coords  = label_coords   # saved for DOM-priority re-render
 
         if self.training_style:
-            # Render in training box style (matches src.som.render_som.apply_som,
-            # the same renderer used to build training data). apply_som
-            # re-sorts elements by area and assigns NEW sequential mark IDs,
-            # so we must build mark_to_center from its `placed` output — not
-            # label_coords.
             elements_for_som = [
                 {"bbox": [x/iw, y/ih, (x+bw)/iw, (y+bh)/ih]}
                 for (x, y, bw, bh) in label_coords.values()
@@ -338,13 +498,13 @@ class DemoRunner:
 
         print(f"  Original : {image.size}  |  SoM : {som_image.size}")
         return som_image, mark_to_center, content_list
-
+    
     def _rebuild_som_dom_priority(
         self,
         original_image: Image.Image,
         omni_content_list: list,
         dom_elements: list,
-        max_marks: int = 15,
+        max_marks: int = 50, #was 15 !
     ) -> tuple[Image.Image, dict, list]:
         """
         Re-render the SoM with DOM elements occupying the lowest mark IDs
@@ -361,6 +521,12 @@ class DemoRunner:
         every task.)
 
         DOM priority: text inputs → buttons → other interactive elements.
+
+        Used by both act() and act_fused() — the fused adapter has no
+        coordinate-based cross-check the way act()'s _nearest_mark() does,
+        so forcing DOM-known elements onto low, predictable mark IDs is
+        the main mitigation available against OmniParser's mark ordering
+        diverging from what the model was trained against.
         """
         iw, ih = original_image.size
 
@@ -414,7 +580,7 @@ class DemoRunner:
 
         return img, mark_to_center, content_list
 
-    def _run_qwen(self, image: Image.Image, prompt: str) -> str:
+    def _run_qwen(self, image: Image.Image, prompt: str, max_new_tokens: int = 20) -> str:
         import torch
         from qwen_vl_utils import process_vision_info
 
@@ -436,9 +602,23 @@ class DemoRunner:
         ).to(self._qwen.device)
 
         with torch.no_grad():
-            out = self._qwen.generate(**inputs, max_new_tokens=20)
+            out = self._qwen.generate(**inputs, max_new_tokens=max_new_tokens)
         trimmed = out[0][inputs["input_ids"].shape[1]:]
-        return self._processor.decode(trimmed, skip_special_tokens=True).strip()
+        result = self._processor.decode(trimmed, skip_special_tokens=True).strip()
+
+        # Release cached (not-in-use-but-not-yet-freed) memory back to the
+        # allocator after every call — mitigates fragmentation across the
+        # varying image sizes a live multi-step run produces (different
+        # screenshots → different image-token counts → different-shape
+        # allocations). Confirmed necessary on 4GB VRAM during a real
+        # multi-step planner+fused run that OOM'd by step 3. Do NOT use
+        # PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True instead — already
+        # confirmed to produce corrupted/garbage logits with bitsandbytes
+        # 4-bit in this project.
+        del inputs, out, trimmed, image_inputs
+        torch.cuda.empty_cache()
+
+        return result
 
     def act(self, image_path: str, task: str, dom_elements: list | None = None) -> tuple[str, tuple | None]:
         image = Image.open(image_path).convert("RGB")
@@ -465,7 +645,7 @@ class DemoRunner:
             # Re-render the entire SoM with DOM elements at mark IDs 0, 1, ...
             # so the model's Mark:0 bias maps to the most relevant input element.
             inference_image, mark_to_center, content_list = \
-                self._rebuild_som_dom_priority(image, content_list, dom_elements, max_marks=15)
+                self._rebuild_som_dom_priority(image, content_list, dom_elements, max_marks=50) #was 15
             self._last_content_list = content_list
             print(f"  SoM rebuilt: {len(mark_to_center)} marks (DOM-first)", flush=True)
         else:
@@ -532,6 +712,107 @@ class DemoRunner:
             print("  No coordinate or mark parsed from response")
 
         return response, point
+
+    def act_fused(
+        self,
+        image_path: str,
+        task: str,
+        history: list[dict] | None = None,
+        dom_elements: list | None = None,
+    ) -> tuple[str, dict | None, tuple | None]:
+        """
+        Single-call fused-adapter path: OmniParser -> FUSED_PROMPT_TEMPLATE
+        -> JSON {ACTION, MARK, VALUE} -> mark lookup.
+
+        Works whether the fused adapter was loaded as the sole/default
+        adapter (VRAM-light, for solo sanity checks and the inference
+        server's --mode fused) or loaded alongside the smoke adapter under
+        the name "fused" (for a future dual-adapter comparison, once VRAM
+        allows it — e.g. on Kaggle).
+
+        If dom_elements is provided, re-renders the SoM with DOM elements
+        at the lowest mark IDs first (same _rebuild_som_dom_priority used
+        by act()) — mitigates OmniParser's mark ordering diverging from
+        whatever ordering Magma's own SoM pipeline used during training,
+        by putting the most reliably-identified elements (search boxes,
+        buttons, product links) on low, predictable mark numbers rather
+        than wherever OmniParser's area-sort happens to place them.
+
+        Callers are responsible for passing "tag" values in `history`
+        entries that already match Mind2Web's semantic vocabulary (e.g.
+        "link", "searchbox", "button", "combobox") rather than raw HTML
+        tag names — see dom_element_to_mind2web_type() for the mapping.
+        Confirmed via a real training example that this vocabulary
+        mismatch, not the model itself, is the most likely cause of the
+        task-blind mark collapse observed on live pages: every checkpoint
+        (400-825 steps) correctly resolved a held-out training-shaped
+        example, but consistently collapsed to page-fixed (not
+        task-fixed) marks on live Amazon screenshots whose history used
+        raw HTML tags instead.
+
+        NOTE: unlike act(), there is no coordinate-based cross-check here —
+        the fused adapter's output format has no raw (x, y), only a bare
+        MARK integer, so a wrong mark can't be caught the way act()'s
+        _nearest_mark() catches a wrong literal "Mark: N" against a
+        separately-parsed coordinate. dom_elements reduces but does not
+        eliminate mark-resolution risk. See _check_fused_label_sanity()
+        for a cheap post-hoc tripwire.
+        """
+        from peft import PeftModel
+        if not isinstance(self._qwen, PeftModel):
+            raise RuntimeError(
+                "act_fused() called but no LoRA adapter was loaded at all — "
+                "pass lora_path= (fused-only) or lora_path=+fused_lora_path= "
+                "when constructing DemoRunner."
+            )
+        has_named_fused = "fused" in getattr(self._qwen, "peft_config", {})
+
+        image = Image.open(image_path).convert("RGB")
+
+        print("  Running OmniParser...", flush=True)
+        som_image, mark_to_center, content_list = self._run_omniparser(image)
+        print(f"  Total elements : {len(mark_to_center)}", flush=True)
+
+        if dom_elements:
+            som_image, mark_to_center, content_list = \
+                self._rebuild_som_dom_priority(image, content_list, dom_elements, max_marks=50) #was 30
+            self._last_content_list = content_list
+            print(f"  SoM rebuilt: {len(mark_to_center)} marks (DOM-first)", flush=True)
+
+        prompt = FUSED_PROMPT_TEMPLATE.format(
+            task=task,
+            history=format_fused_history(history or []),
+        )
+
+        tag = self.tag or "debug"
+        save_path = Path(f"/tmp/vlm_input_fused_{tag}.png")
+        som_image.save(save_path)
+        print(f"  VLM input saved: {save_path}")
+
+        print("  Running Qwen (fused adapter)...", flush=True)
+        if has_named_fused:
+            self._qwen.set_adapter("fused")
+        try:
+            response = self._run_qwen(som_image, prompt, max_new_tokens=60)
+        finally:
+            if has_named_fused:
+                self._qwen.set_adapter("default")
+
+        parsed = parse_fused_action(response)
+        point = None
+        if parsed and parsed.get("mark") is not None:
+            point = mark_to_center.get(parsed["mark"])
+
+        if parsed is None:
+            print(f"  Failed to parse JSON from response: {response!r}")
+        elif point is None:
+            print(f"  Mark {parsed.get('mark')} not in mark_to_center "
+                  f"({len(mark_to_center)} marks available)")
+        else:
+            print(f"  {parsed['action']} Mark {parsed['mark']} → center {point}")
+            _check_fused_label_sanity(task, parsed["mark"], content_list)
+
+        return response, parsed, point
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -642,6 +923,11 @@ def main():
                         help="Task description (single shot)")
     parser.add_argument("--lora",           default=None,
                         help="Path to LoRA adapter dir")
+    parser.add_argument("--fused-lora",     default=None,
+                        help="Path to fused adapter dir, loaded alongside --lora "
+                             "(enables act_fused() with a named 'fused' adapter; "
+                             "not used by the CLI run loop yet — "
+                             "see tests/smoke_fused_mark_check.py)")
     parser.add_argument("--tag",            default="",
                         help="Output filename tag: click_TAG_screenshot_task.png")
     parser.add_argument("--raw",            action="store_true",
@@ -660,6 +946,7 @@ def main():
         raw_mode=args.raw,
         tag=args.tag,
         training_style=args.training_style,
+        fused_lora_path=args.fused_lora,
     )
 
     if args.interactive:

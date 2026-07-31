@@ -41,7 +41,7 @@ from src.agent.browser_env import BrowserEnv
 SERVER_URL = "http://127.0.0.1:8787"
 
 # REMOTE — Kaggle T4/P100 + ngrok tunnel. To switch: comment out the LOCAL
-# line above, uncomment this one, and paste in your current ngrok URL
+# line above, uncomment thmax_marksis one, and paste in your current ngrok URL
 # (it's ephemeral — changes every time the Kaggle notebook restarts).
 # SERVER_URL = "https://plop-isolated-blinked.ngrok-free.dev"
 
@@ -53,26 +53,51 @@ ACTION_RE = re.compile(
     re.IGNORECASE,
 )
 
-PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time. You respond with ONLY a function call, nothing else - no explanation, no extra words.
+# Fallback for when the planner invents an action word outside the valid
+# set (e.g. "SELECT(...)") but the shape is otherwise a recognizable
+# function call — recover it as a CLICK rather than aborting the run.
+# Same fix already applied to planner_agent_fused.py — this isn't
+# fused-specific, it's a base-model planner quirk (confirmed live:
+# 'SELECT("The Odyssey") - completed, results now showing' from this
+# exact planner/prompt combo).
+FALLBACK_ACTION_RE = re.compile(r'\b[A-Z]+\s*\(\s*"([^"]*)"', re.IGNORECASE)
 
-Valid function calls (pick exactly one):
+# Tightened to close off two observed failure modes: (1) inventing action
+# words outside the valid set (e.g. "SELECT(...)"), and (2) appending
+# narrative/status text after the function call instead of stopping,
+# apparently mimicking the `history` string format it's shown rather than
+# emitting a bare action.
+PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time on a shopping website. You are shown the CURRENT screenshot each turn. Decide the single next action needed to make progress toward the goal.
+
+Valid function calls (pick exactly one — these are the ONLY four valid action words, nothing else is allowed):
 SEARCH("query")
 CLICK("description of element")
 SCROLL("down")
 DONE("summary")
 
-Examples of correct responses:
-CLICK("the blue Add to cart button")
-SEARCH("wireless mouse")
-SCROLL("down")
+Reasoning steps, in order:
+1. Look at the screenshot and identify what KIND of page you are on:
+   - Search results page: a grid/list of many small product thumbnails and titles, no single large product image.
+   - Product detail page: one large product image, a title, price, and an "Add to Cart" / "Buy Now" button.
+   - Cart page: a list of items already added, URL contains "cart".
+2. Never repeat the exact action you just completed if the screenshot still looks like the same page — if the last action doesn't seem to have changed anything useful, try a different, more specific action instead.
+3. If the screenshot shows the goal is already achieved (a cart/basket icon shows a count, the page confirms an item was added, or you're on the cart page with the item listed), respond DONE with a short summary. Do not keep repeating SEARCH or CLICK once the goal is achieved.
+4. To open a specific product from search results, use CLICK, never SELECT — SELECT is not a valid action here.
+
+Respond with EXACTLY one function call and nothing else — no extra words, no explanation of what it does, no status note after the closing parenthesis.
+
+Example sequence (one action per turn, across several turns — NOT all in one response):
+  Turn 1, goal "buy Dune": SEARCH("Dune")
+  Turn 2, now on search results: CLICK("the Dune book cover")
+  Turn 3, now on product page: CLICK("the Add to Cart button")
+  Turn 4, item now in cart: DONE("Added Dune to cart")
 
 Goal: {goal}
 
 Already completed:
 {history}
 
-Look at the screenshot. Respond with ONLY one function call for the next step:"""
-
+Look at the CURRENT screenshot. Respond with ONLY one function call for the next step:"""
 MAX_STEPS = 6
 
 
@@ -144,9 +169,18 @@ class PlannerInferenceClient:
 
 def parse_action(response: str):
     m = ACTION_RE.search(response)
-    if not m:
-        return None, None
-    return m.group(1).upper(), m.group(2).strip()
+    if m:
+        return m.group(1).upper(), m.group(2).strip()
+
+    # Fallback: model produced a recognizable function-call shape but with
+    # an invalid action word (e.g. SELECT("...")) — recover as CLICK rather
+    # than aborting the run. See FALLBACK_ACTION_RE docstring above.
+    fm = FALLBACK_ACTION_RE.search(response)
+    if fm:
+        print(f"  ⚠ unrecognized action word in response — treating as CLICK: {response!r}")
+        return "CLICK", fm.group(1).strip()
+
+    return None, None
 
 
 def plan_next_action(client: PlannerInferenceClient, png_bytes: bytes, goal: str, history: list):

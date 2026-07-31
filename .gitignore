@@ -33,3 +33,7 @@ temp.*
 **/temp.*
 docs/experiments/hf/test*.py
 docs/HANDOFF.md
+# secrets — never commit
+.env
+.env.*
+!.env.example

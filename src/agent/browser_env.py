@@ -273,7 +273,32 @@ class BrowserEnv:
         if verify_change:
             pre_raw = self._page.screenshot(type="png")
 
+        pages_before = len(self._context.pages)
         self._page.mouse.click(px_x, px_y)
+
+        # Some sites (Amazon product links included) open target="_blank"
+        # links in a NEW tab rather than navigating the current one. This
+        # class previously only ever tracked the single self._page set at
+        # __init__ -- a click that opened a new tab left self._page
+        # pointing at the now-stale original page, so screenshot()/
+        # current_url() kept reporting unchanged content indefinitely.
+        # Confirmed live: a product-click during an agent run opened a
+        # second browser tab while the agent's tracked page stayed on
+        # search results, producing an infinite CLICK-retry loop since
+        # the agent correctly saw no change on the page it was watching.
+        # Detect and switch to a newly-opened page here.
+        try:
+            self._page.wait_for_timeout(300)  # brief settle for the new page to register
+        except Exception:
+            pass
+        if len(self._context.pages) > pages_before:
+            new_page = self._context.pages[-1]
+            log.info("New tab detected after click -- switching tracked page to it")
+            self._page = new_page
+            try:
+                self._page.wait_for_load_state("domcontentloaded", timeout=10_000)
+            except Exception:
+                pass
 
         changed = False
         if verify_change:
@@ -344,16 +369,41 @@ class BrowserEnv:
 
         Returns a list of dicts: {tag, type, label, bbox_norm: [x1,y1,x2,y2]}
         where bbox_norm coordinates are normalised to [0,1] over the viewport.
-        Elements outside the visible viewport, with negligible size, or
-        disabled are skipped.
+        Elements outside the visible viewport, with negligible size,
+        disabled, hidden by an ancestor, or clipped out of an
+        overflow-hidden ancestor's visible box are skipped.
 
-        NOTE: previously this selector only covered input/textarea/select/
-        button + a few ARIA roles — it had no `<a>` tag, so any plain link
-        (nav items like "Sign in", "Account", footer links) was invisible to
-        DOM extraction and could only ever be caught by OmniParser's visual
-        detection, which is not guaranteed to survive MAX_ELEMENTS capping.
-        This was the root cause of the agent being unable to target "Hello,
-        sign in" on Amazon — the element was never in dom_elements at all.
+        NOTE (earlier fix): this selector originally only covered
+        input/textarea/select/button + a few ARIA roles — no `<a>` tag, so
+        plain links (nav items like "Sign in", footer links) were invisible
+        to DOM extraction. Root-caused as why the agent couldn't target
+        "Hello, sign in" on Amazon — the element was never in
+        dom_elements at all. Fixed by extending the selector to a[href],
+        role=link/button, [onclick].
+
+        NOTE (this fix, v1 — insufficient): a first pass tried rejecting
+        elements under any ancestor with overflow:hidden AND
+        clientHeight===0, assuming a fully-collapsed accordion pattern.
+        Confirmed via direct devtools-style inspection that this misses a
+        more common case: Amazon's category nav row (#nav-xshop) has
+        overflow:hidden with a NON-ZERO fixed height (maxHeight: 39px,
+        clientHeight: 39) — a single-row-tall clipping window. Its
+        flex-wrapped category links (Computers, Toys & Games, Grocery &
+        Gourmet Foods, etc.) that don't fit in that one row wrap onto
+        additional rows which are then visually clipped off, while still
+        being real, normally-laid-out elements with real, non-zero
+        bounding rects. clientHeight===0 never triggers here since the
+        container itself is not collapsed.
+
+        NOTE (this fix, v2 — general): rather than special-casing
+        "collapsed to zero," check whether the element's OWN bounding
+        rect actually intersects each overflow-hidden/clip ancestor's own
+        bounding rect. If the element's rect falls entirely outside an
+        overflow-hidden ancestor's visible box (in either axis, for any
+        reason — zero-height collapse, fixed-height row clipping,
+        horizontal overflow, scrolled-out content), it is clipped away
+        and excluded, without assuming which specific CSS pattern caused
+        it.
         """
         vp = self._page.viewport_size or {"width": self._vp_w, "height": self._vp_h}
         vp_w, vp_h = vp["width"], vp["height"]
@@ -364,6 +414,38 @@ class BrowserEnv:
                           + 'a[href], [role="searchbox"], [role="combobox"], '
                           + '[role="textbox"], [role="link"], [role="button"], '
                           + '[onclick]';
+
+                // Ancestor chain check, in two parts:
+                //  1. display:none / visibility:hidden / opacity:0 anywhere
+                //     up the chain -> fully hidden, reject outright.
+                //  2. overflow-hidden/clip ancestors -> reject only if the
+                //     ELEMENT'S OWN rect doesn't actually intersect that
+                //     ancestor's clipping box. This catches zero-height
+                //     collapse, fixed-height row clipping (flex-wrap
+                //     overflow), and horizontal overflow clipping alike,
+                //     without hardcoding which pattern is in play.
+                function isClipped(el, elRect) {
+                    let node = el.parentElement;
+                    while (node && node !== document.documentElement) {
+                        const style = window.getComputedStyle(node);
+                        if (style.display === 'none' || style.visibility === 'hidden'
+                                || style.opacity === '0') {
+                            return true;
+                        }
+                        const ox = style.overflowX, oy = style.overflowY;
+                        if (ox === 'hidden' || oy === 'hidden'
+                                || ox === 'clip' || oy === 'clip') {
+                            const ar = node.getBoundingClientRect();
+                            const noOverlap =
+                                elRect.right  <= ar.left  || elRect.left >= ar.right ||
+                                elRect.bottom <= ar.top   || elRect.top  >= ar.bottom;
+                            if (noOverlap) return true;
+                        }
+                        node = node.parentElement;
+                    }
+                    return false;
+                }
+
                 const out = [];
                 for (const el of document.querySelectorAll(sel)) {
                     if (el.disabled) continue;
@@ -371,15 +453,9 @@ class BrowserEnv:
                     if (r.width < 5 || r.height < 5) continue;
                     if (r.bottom < 0 || r.top > window.innerHeight) continue;
                     if (r.right  < 0 || r.left > window.innerWidth)  continue;
-                    const style = window.getComputedStyle(el);
-                    if (style.display === 'none' || style.visibility === 'hidden'
-                            || style.opacity === '0') continue;
+                    if (isClipped(el, r)) continue;
                     if (el.getAttribute('aria-disabled') === 'true') continue;
 
-                    // Links/JS-clickables usually carry their label as visible
-                    // text, not placeholder/name — fall back to trimmed
-                    // innerText (capped) so "Hello, sign in" etc. gets a
-                    // usable label instead of an empty string.
                     const text = (el.innerText || el.textContent || '')
                                     .trim().replace(/\\s+/g, ' ').slice(0, 60);
 

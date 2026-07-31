@@ -17,7 +17,7 @@ from qwen_vl_utils import process_vision_info
 from PIL import Image
 
 QWEN_PATH = "models/qwen2_5_vl_3b"
-LORA_PATH = "models/lora_adapter_smoke"
+LORA_PATH = "models/lora_adapter_fused"
 TEST_IMAGE = "outputs/browser/ss_0000.png"  # swap for any screenshot you have
 
 print("Loading base Qwen2.5-VL-3B (4-bit)...")
