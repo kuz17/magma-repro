@@ -8,20 +8,23 @@ Usage:
 
     python -m src.agent.inference_server --mode baseline --port 8787
 
-    python -m src.agent.inference_server \
-        --mode fused --fused-lora models/lora_adapter_fused --port 8787
+Endpoints:
+    GET  /health
+    POST /act        { image_b64, task, dom_elements? }        -> click grounding (adapter ON)
+    POST /plan       { image_b64, goal, history? }              -> next action (adapter OFF)
+    POST /describe   { image_b64, question?, max_new_tokens? }  -> description/VQA (adapter OFF)
 
-POST /act        { "image_b64": "<base64 PNG>", "task": "click X" }
-POST /plan       { "image_b64": "<base64 PNG>", "prompt": "<fully-formatted planning prompt>" }
-POST /act_fused  { "image_b64": "<base64 PNG>", "task": "click X", "history": [...], "dom_elements": [...] }
-GET  /health
+/plan and /describe both run the BASE model via disable_adapter() - the LoRA adapter
+was trained only on click-to-coordinate grounding, so it's the wrong mode for picking
+a next action or describing a scene. Same single DemoRunner instance serves all three;
+OmniParser (needed only by /act) is already paid for once at startup, adapter state is
+just toggled per-request - no reload, no extra VRAM.
 """
 
 from __future__ import annotations
 
 import argparse
 import base64
-import io
 import logging
 import re
 import sys
@@ -30,7 +33,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from PIL import Image
 
 log = logging.getLogger(__name__)
 
@@ -63,34 +68,82 @@ class ActResponse(BaseModel):
     elements:     List[ElementInfo]
     error:        Optional[str] = None
 
+
 class PlanRequest(BaseModel):
     image_b64: str
-    prompt:    str   # fully-formatted planning prompt (goal + history baked in client-side)
+    goal:      str
+    history:   List[str] = []
 
 class PlanResponse(BaseModel):
+    action:       Optional[str]   # SEARCH / CLICK / SCROLL / DONE, or None if unparseable
+    arg:          Optional[str]
     raw_response: str
     error:        Optional[str] = None
 
-class FusedHistoryEntry(BaseModel):
-    tag:    str
-    label:  str
-    action: str
-    value:  Optional[str] = None
 
-class ActFusedRequest(BaseModel):
-    image_b64:    str
-    task:         str
-    history:      List[FusedHistoryEntry] = []
-    dom_elements: List[DomElementInfo] = []
+class DescribeRequest(BaseModel):
+    image_b64:      str
+    question:       Optional[str] = None   # omit for a generic description
+    max_new_tokens: int = 200
 
-class ActFusedResponse(BaseModel):
-    click_norm:   Optional[List[float]]
-    action:       Optional[str]
-    mark_id:      Optional[int]
-    value:        Optional[str]
-    raw_response: str
-    elements:     List[ElementInfo]
-    error:        Optional[str] = None
+class DescribeResponse(BaseModel):
+    response: str
+    error:    Optional[str] = None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Shared prompt/parsing bits (kept identical to router_agent.py's local versions
+# so remote and local behavior match)
+# ══════════════════════════════════════════════════════════════════════════════
+
+ACTION_RE = re.compile(
+    r'(?:ACTION:\s*)?(SEARCH|CLICK|SCROLL|DONE)\s*\(\s*"?([^")]*)"?\s*\)',
+    re.IGNORECASE,
+)
+
+PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time. You respond with ONLY a function call, nothing else - no explanation, no extra words.
+
+Valid function calls (pick exactly one):
+SEARCH("query")
+CLICK("description of element")
+SCROLL("down")
+DONE("summary")
+
+Goal: {goal}
+
+Already completed:
+{history}
+
+Look at the screenshot. Respond with ONLY one function call for the next step:"""
+
+QUESTION_RE = re.compile(r"^\s*(what|where|who|how many|is there|does|are there)\b", re.IGNORECASE)
+
+# Kaggle T4/P100 have far more headroom than the 4GB local card this was tuned for,
+# but still cap absurdly large uploads (e.g. a raw phone photo) so one request can't
+# blow past whatever's free.
+MAX_IMAGE_SIDE = 1536
+
+
+def _resize_for_vram(image: Image.Image, max_side: int = MAX_IMAGE_SIDE) -> Image.Image:
+    w, h = image.size
+    longest = max(w, h)
+    if longest <= max_side:
+        return image
+    scale = max_side / longest
+    new_size = (int(w * scale), int(h * scale))
+    log.info("Resizing %dx%d -> %dx%d to stay within VRAM budget", w, h, *new_size)
+    return image.resize(new_size, Image.LANCZOS)
+
+
+def _decode_image(image_b64: str) -> Image.Image:
+    png_bytes = base64.b64decode(image_b64)
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        tmp.write(png_bytes)
+        tmp_path = tmp.name
+    try:
+        return Image.open(tmp_path).convert("RGB")
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -107,35 +160,45 @@ def _patch_demo_runner():
 # App factory
 # ══════════════════════════════════════════════════════════════════════════════
 
-def build_app(
-    mode: str,
-    lora_path: Optional[str],
-    fused_lora_path: Optional[str] = None,
-) -> FastAPI:
+def build_app(mode: str, lora_path: Optional[str]) -> FastAPI:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     _patch_demo_runner()
     from src.agent.click_visualizer import DemoRunner
-    from PIL import Image
 
     log.info("Loading models for mode='%s'...", mode)
-    if mode == "fused":
-        # Fused adapter loaded SOLO as the default adapter — no dual-loading
-        # with the smoke adapter. Keeps this to one adapter's VRAM footprint
-        # (confirmed necessary on 4GB local hardware; harmless on Kaggle too).
-        runner = DemoRunner(
-            lora_path=fused_lora_path,
-            raw_mode=False,
-            tag=mode,
-            training_style=True,
-        )
-    else:
-        runner = DemoRunner(
-            lora_path=lora_path if mode == "finetuned" else None,
-            raw_mode=False,
-            tag=mode,
-            training_style=(mode == "finetuned"),
-        )
+    runner = DemoRunner(
+        lora_path=lora_path if mode == "finetuned" else None,
+        raw_mode=False,
+        tag=mode,
+        training_style=(mode == "finetuned"),
+    )
     log.info("Runner ready.")
+
+    def _generate_prose(image: Image.Image, prompt: str, max_new_tokens: int) -> str:
+        """Like runner._run_qwen, but with a token budget for prose instead of
+        the 20-token budget _run_qwen hardcodes for coordinate/mark output."""
+        import torch
+        from qwen_vl_utils import process_vision_info
+
+        messages = [{
+            "role": "user",
+            "content": [
+                {"type": "image", "image": image},
+                {"type": "text", "text": prompt},
+            ],
+        }]
+        text = runner._processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        image_inputs, _ = process_vision_info(messages)
+        inputs = runner._processor(
+            text=[text], images=image_inputs, return_tensors="pt"
+        ).to(runner._qwen.device)
+
+        with torch.no_grad():
+            out = runner._qwen.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+        trimmed = out[0][inputs["input_ids"].shape[1]:]
+        return runner._processor.decode(trimmed, skip_special_tokens=True).strip()
 
     app = FastAPI(title="magma-repro inference server")
 
@@ -199,119 +262,43 @@ def build_app(
 
     @app.post("/plan")
     def plan(req: PlanRequest) -> PlanResponse:
-        """
-        Planning-only endpoint: runs the BASE model (adapter disabled via
-        PEFT's disable_adapter() context manager) on a raw image + prompt,
-        with no OmniParser/SoM/mark-lookup involved.
-
-        Mirrors exactly what tests/planner_agent.py's plan_next_action()
-        did in-process before this split — the planner step here (base
-        model) and the executor step at /act or /act_fused share the SAME
-        loaded model instance server-side. No double VRAM, no
-        load_adapter/unload bug — the property the original in-process
-        design was built to preserve, just moved across a network call
-        instead of a Python function call.
-
-        disable_adapter() works the same regardless of WHICH adapter is
-        currently loaded as default — smoke, fused, or none — so this
-        endpoint needs no changes for --mode fused. Independently
-        confirmed via tests/smoke_disable_adapter.py (re-run against
-        lora_adapter_fused specifically): with/disabled/with-again outputs
-        compared and matched cleanly, no leakage of fused-adapter behavior
-        into the disabled state.
-        """
         try:
-            png_bytes = base64.b64decode(req.image_b64)
+            image = _decode_image(req.image_b64)
         except Exception as exc:
-            return PlanResponse(raw_response="", error=f"Bad base64: {exc}")
+            return PlanResponse(action=None, arg=None, raw_response="", error=f"Bad base64: {exc}")
 
         try:
-            image = Image.open(io.BytesIO(png_bytes)).convert("RGB")
-            if hasattr(runner._qwen, "disable_adapter"):
-                with runner._qwen.disable_adapter():
-                    raw_response = runner._run_qwen(image, req.prompt)
+            hist_str = "\n".join(f"- {h}" for h in req.history) if req.history else "(none - this is the first step)"
+            prompt = PLANNING_PROMPT_TEMPLATE.format(goal=req.goal, history=hist_str)
+            with runner._qwen.disable_adapter():
+                raw_response = runner._run_qwen(image, prompt)
+            m = ACTION_RE.search(raw_response)
+            action = m.group(1).upper() if m else None
+            arg = m.group(2).strip() if m else None
+            return PlanResponse(action=action, arg=arg, raw_response=raw_response)
+        except Exception as exc:
+            log.exception("Plan error")
+            return PlanResponse(action=None, arg=None, raw_response="", error=str(exc))
+
+    @app.post("/describe")
+    def describe(req: DescribeRequest) -> DescribeResponse:
+        try:
+            image = _decode_image(req.image_b64)
+            image = _resize_for_vram(image)
+        except Exception as exc:
+            return DescribeResponse(response="", error=f"Bad base64: {exc}")
+
+        try:
+            if req.question and req.question.strip():
+                prompt = req.question.strip()
             else:
-                raw_response = runner._run_qwen(image, req.prompt)
-            return PlanResponse(raw_response=raw_response)
+                prompt = "Describe what you see in this image in detail."
+            with runner._qwen.disable_adapter():
+                response = _generate_prose(image, prompt, req.max_new_tokens)
+            return DescribeResponse(response=response)
         except Exception as exc:
-            log.exception("Planning error")
-            return PlanResponse(raw_response="", error=str(exc))
-
-    @app.post("/act_fused")
-    def act_fused(req: ActFusedRequest) -> ActFusedResponse:
-        """
-        Single-call fused-adapter endpoint: OmniParser + fused adapter
-        decide ACTION (CLICK/TYPE/SELECT) + MARK + VALUE together, in one
-        forward pass — replacing the separate OmniParser-render +
-        smoke-adapter-grounding round trip that /act makes.
-
-        dom_elements, when provided, triggers the same DOM-priority SoM
-        rebuild /act uses — mitigates OmniParser's mark ordering diverging
-        from whatever ordering Magma's own SoM pipeline used during
-        training. Not a complete fix (confirmed via real-page testing:
-        mark resolution can still land on an unrelated element even with
-        DOM elements present) — see act_fused()'s docstring in
-        click_visualizer.py for the full caveat.
-
-        Requires the server to have been started with --mode fused (or
-        any mode where a fused adapter was loaded, named either "default"
-        or "fused" — see DemoRunner.act_fused()'s has_named_fused check).
-        """
-        try:
-            png_bytes = base64.b64decode(req.image_b64)
-        except Exception as exc:
-            return ActFusedResponse(
-                click_norm=None, action=None, mark_id=None, value=None,
-                raw_response="", elements=[],
-                error=f"Bad base64: {exc}",
-            )
-
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-            tmp.write(png_bytes)
-            tmp_path = tmp.name
-
-        error_msg:    Optional[str]     = None
-        raw_response: str               = ""
-        parsed:       Optional[dict]    = None
-        point:        Optional[tuple]   = None
-        elements:     List[ElementInfo] = []
-
-        history = [
-            {"tag": h.tag, "label": h.label, "action": h.action, "value": h.value}
-            for h in req.history
-        ]
-        dom_elems = [
-            {"tag": e.tag, "type": e.type, "label": e.label, "bbox_norm": e.bbox_norm}
-            for e in req.dom_elements
-        ]
-
-        try:
-            raw_response, parsed, point = runner.act_fused(
-                tmp_path, req.task, history=history, dom_elements=dom_elems,
-            )
-
-            for i, elem in enumerate(getattr(runner, "_last_content_list", []) or []):
-                elements.append(ElementInfo(
-                    id=i,
-                    content=str(elem.get("content") or ""),
-                    type=str(elem.get("type", "element")),
-                    bbox=list(elem.get("bbox") or [0, 0, 0, 0]),
-                ))
-        except Exception as exc:
-            log.exception("Fused pipeline error")
-            error_msg = str(exc)
-        finally:
-            Path(tmp_path).unlink(missing_ok=True)
-
-        return ActFusedResponse(
-            click_norm=list(point) if point else None,
-            action=parsed.get("action") if parsed else None,
-            mark_id=parsed.get("mark") if parsed else None,
-            value=parsed.get("value") if parsed else None,
-            raw_response=raw_response,
-            elements=elements,
-            error=error_msg,
-        )
+            log.exception("Describe error")
+            return DescribeResponse(response="", error=str(exc))
 
     return app
 
@@ -322,26 +309,22 @@ def build_app(
 
 def main():
     parser = argparse.ArgumentParser(description="magma-repro inference server")
-    parser.add_argument("--mode", choices=["baseline", "finetuned", "fused"],
+    parser.add_argument("--mode", choices=["baseline", "finetuned"],
                         default="finetuned")
     parser.add_argument("--lora", default=None)
-    parser.add_argument("--fused-lora", default=None,
-                        help="Path to the fused adapter dir — required when --mode fused")
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--host", default="127.0.0.1")
     args = parser.parse_args()
 
     if args.mode == "finetuned" and not args.lora:
         parser.error("--lora is required when --mode finetuned")
-    if args.mode == "fused" and not args.fused_lora:
-        parser.error("--fused-lora is required when --mode fused")
 
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-    app = build_app(mode=args.mode, lora_path=args.lora, fused_lora_path=args.fused_lora)
+    app = build_app(mode=args.mode, lora_path=args.lora)
 
     import uvicorn
     log.info("Starting on %s:%d  mode=%s", args.host, args.port, args.mode)
