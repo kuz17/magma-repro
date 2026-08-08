@@ -180,6 +180,54 @@ def run_image_loop_remote(client: RemoteInferenceClient, image_path: str) -> Non
 # Web agent (browser local, model remote)
 # ══════════════════════════════════════════════════════════════════════════
 
+def _dom_search(browser: BrowserEnv, query: str) -> bool:
+    """
+    Compound DOM-direct search action, mirroring tests/planner_agent.py and
+    web_agent.py's WebAgent.search() - there's no browser.search() method on
+    BrowserEnv itself, this logic lives at the call-site in every script that
+    uses it. Skips VLM inference entirely (the search bar is already reliably
+    found via DOM query, so running OmniParser+Qwen for it is pure waste).
+    """
+    elems = browser.get_interactive_elements()
+    input_elem = next(
+        (e for e in elems
+         if e["tag"] in ("input", "textarea")
+         and e["type"] not in ("submit", "button", "checkbox", "radio", "image", "hidden")),
+        None,
+    )
+    if input_elem is None:
+        print("  ✗ no text input found on this page")
+        return False
+
+    submit_elem = next(
+        (e for e in elems if e["tag"] == "button" or e.get("type") in ("submit", "button")),
+        None,
+    )
+
+    bbox = input_elem["bbox_norm"]
+    cx, cy = (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
+    browser.click(cx, cy)
+    time.sleep(0.15)
+    browser.press_key("Control+a")   # select-all to clear existing text
+    browser.type_text(query)
+    time.sleep(0.15)
+    browser.press_key("Escape")       # dismiss autocomplete (prevents Enter interception)
+    time.sleep(0.1)
+
+    if submit_elem is not None:
+        sb = submit_elem["bbox_norm"]
+        sx, sy = (sb[0] + sb[2]) / 2, (sb[1] + sb[3]) / 2
+        browser.click(sx, sy)
+    else:
+        browser.press_key("Enter")
+
+    try:
+        browser.wait_for_load(timeout_ms=10_000)
+    except Exception:
+        pass
+    return True
+
+
 def run_web_agent_remote(client: RemoteInferenceClient, goal: str, start_url: str, headless: bool = False) -> str:
     with BrowserEnv(headless=headless, save_screenshots=True) as browser:
         browser.navigate(start_url)
@@ -204,7 +252,7 @@ def run_web_agent_remote(client: RemoteInferenceClient, goal: str, start_url: st
                 return f"done: {arg}"
 
             if action == "SEARCH":
-                browser.search(arg)
+                _dom_search(browser, arg)
                 history.append(f"SEARCH({arg!r})")
             elif action == "CLICK":
                 dom_elements = browser.get_interactive_elements()
@@ -212,11 +260,12 @@ def run_web_agent_remote(client: RemoteInferenceClient, goal: str, start_url: st
                 print(f"    grounding response: {act_result.get('raw_response')!r} -> click_norm={act_result.get('click_norm')}")
                 point = act_result.get("click_norm")
                 if point:
-                    browser.click(*point)
+                    browser.click(point[0], point[1], verify_change=False)
                 history.append(f"CLICK({arg!r})")
             elif action == "SCROLL":
-                browser.scroll(arg)
-                history.append(f"SCROLL({arg!r})")
+                direction = (arg or "down").strip().lower()
+                browser.scroll(delta_y=400 if direction == "down" else -400)
+                history.append(f"SCROLL({direction!r})")
 
         return "stopped: MAX_STEPS reached"
 
