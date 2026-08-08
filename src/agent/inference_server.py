@@ -109,6 +109,11 @@ CLICK("description of element")
 SCROLL("down")
 DONE("summary")
 
+Examples of correct responses:
+CLICK("the blue Add to cart button")
+SEARCH("wireless mouse")
+SCROLL("down")
+
 Goal: {goal}
 
 Already completed:

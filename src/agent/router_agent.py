@@ -286,6 +286,11 @@ CLICK("description of element")
 SCROLL("down")
 DONE("summary")
 
+Examples of correct responses:
+CLICK("the blue Add to cart button")
+SEARCH("wireless mouse")
+SCROLL("down")
+
 Goal: {goal}
 
 Already completed:
@@ -312,8 +317,8 @@ def plan_next_action(runner: DemoRunner, image: Image.Image, goal: str, history:
     return response, action, arg
 
 
-def run_web_agent(runner: DemoRunner, goal: str, start_url: str) -> str:
-    with BrowserEnv(headless=False, save_screenshots=True) as browser:
+def run_web_agent(runner: DemoRunner, goal: str, start_url: str, headless: bool = False) -> str:
+    with BrowserEnv(headless=headless, save_screenshots=True) as browser:
         browser.navigate(start_url)
         history: list[str] = []
 
@@ -355,7 +360,7 @@ def run_web_agent(runner: DemoRunner, goal: str, start_url: str) -> str:
 # ══════════════════════════════════════════════════════════════════════════
 
 def route(user_input: str, image_path: str | None, url: str | None, forced_mode: str | None,
-          lora_path: str = "models/lora_adapter_smoke") -> str:
+          lora_path: str = "models/lora_adapter_smoke", headless: bool = False) -> str:
     mode = classify_intent(user_input, has_url=bool(url), has_image=bool(image_path), forced_mode=forced_mode)
     print(f"[router] mode = {mode}", flush=True)
 
@@ -371,7 +376,7 @@ def route(user_input: str, image_path: str | None, url: str | None, forced_mode:
     # Web mode DOES need OmniParser (grounding uses it), so DemoRunner is
     # the right loader here.
     runner = DemoRunner(lora_path=lora_path, tag="router_agent", training_style=True)
-    return run_web_agent(runner, user_input, url)
+    return run_web_agent(runner, user_input, url, headless=headless)
 
 
 def main():
@@ -381,6 +386,8 @@ def main():
     parser.add_argument("--url", default=None, help="Starting URL (for the web agent)")
     parser.add_argument("--mode", choices=["web", "image"], default=None, help="Force a mode instead of classifying")
     parser.add_argument("--lora", default="models/lora_adapter_smoke", help="LoRA adapter dir")
+    parser.add_argument("--headless", action="store_true",
+                         help="Run the browser headless (required on Kaggle/servers with no display)")
     parser.add_argument("--interactive", action="store_true",
                          help="Multi-turn chat about --image instead of a single-shot answer. Web mode doesn't support this yet.")
     args = parser.parse_args()
@@ -394,7 +401,7 @@ def main():
     if not args.input:
         parser.error("Provide --input '...' for single-shot mode, or --interactive --image ... for a chat loop")
 
-    result = route(args.input, args.image, args.url, args.mode, lora_path=args.lora)
+    result = route(args.input, args.image, args.url, args.mode, lora_path=args.lora, headless=args.headless)
     print("\n" + "=" * 60)
     print("RESULT")
     print("=" * 60)
