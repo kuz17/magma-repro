@@ -36,6 +36,7 @@ import argparse
 import base64
 import io
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -47,6 +48,18 @@ OMNIPARSER_CODE = "/data/Magma/OmniParser"
 OMNIPARSER_YOLO = "models/omniparser/icon_detect/model.pt"
 OMNIPARSER_CAP  = "models/omniparser/icon_caption"
 QWEN_PATH       = "models/qwen2_5_vl_3b"
+
+# Florence-2 captioning device. Hardcoded to "cpu" until 2026-08-09 because
+# the local 4GB card has no VRAM left over after loading 4-bit Qwen — CPU
+# was the only place Florence-2 could run without OOMing there. That
+# constraint doesn't hold on Kaggle's T4 (16GB), where CPU captioning was
+# confirmed live to be the dominant cost of /act calls (39-82s per call,
+# scaling with how many elements a page has to caption). Defaults to "cpu"
+# so local behavior is completely unchanged; set the env var to move
+# captioning onto GPU where there's headroom for it (e.g. on Kaggle,
+# before starting inference_server.py):
+#     export OMNIPARSER_CAPTION_DEVICE=cuda
+OMNIPARSER_CAPTION_DEVICE = os.environ.get("OMNIPARSER_CAPTION_DEVICE", "cpu")
 
 # ── visual config ──────────────────────────────────────────────────────
 CIRCLE_RADIUS  = 18
@@ -376,9 +389,9 @@ class DemoRunner:
         print("Loading OmniParser YOLO...")
         self._yolo = get_yolo_model(OMNIPARSER_YOLO)
 
-        print("Loading OmniParser Florence-2...")
+        print(f"Loading OmniParser Florence-2 (device={OMNIPARSER_CAPTION_DEVICE})...")
         self._caption_proc = get_caption_model_processor(
-            "florence2", OMNIPARSER_CAP, device="cpu"
+            "florence2", OMNIPARSER_CAP, device=OMNIPARSER_CAPTION_DEVICE
         )
         print("OmniParser ready.")
 
