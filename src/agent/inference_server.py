@@ -304,7 +304,15 @@ def build_app(mode: str, lora_path: Optional[str]) -> FastAPI:
 
         try:
             with runner._qwen.disable_adapter():
-                raw_response = runner._run_qwen(image, prompt)
+                raw_response = _generate_prose(image, prompt, max_new_tokens=60)
+                # 60, not _run_qwen's 20 — that budget is tuned for grounding
+                # output ("Coordinate: (x,y). Mark: N.") and was truncating
+                # planning responses mid-string whenever the CLICK argument
+                # ran long (e.g. a full book title), producing an unterminated
+                # quote that neither ACTION_RE nor FALLBACK_ACTION_RE could
+                # parse. Confirmed live: 'SELECT("The Trial: A Psychological
+                # and Existential Classic by Franz Kafka | A Dystopian Tale'
+                # — no closing quote, cut off exactly at the token limit.
             m = ACTION_RE.search(raw_response)
             if m:
                 action, arg = m.group(1).upper(), m.group(2).strip()

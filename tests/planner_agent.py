@@ -56,18 +56,25 @@ ACTION_RE = re.compile(
 # Fallback for when the planner invents an action word outside the valid
 # set (e.g. "SELECT(...)") but the shape is otherwise a recognizable
 # function call — recover it as a CLICK rather than aborting the run.
-# Same fix already applied to planner_agent_fused.py — this isn't
-# fused-specific, it's a base-model planner quirk (confirmed live:
-# 'SELECT("The Odyssey") - completed, results now showing' from this
-# exact planner/prompt combo).
+# Confirmed live: 'SELECT("The Odyssey")' from this exact planner/prompt
+# combo.
 FALLBACK_ACTION_RE = re.compile(r'\b[A-Z]+\s*\(\s*"([^"]*)"', re.IGNORECASE)
 
-# Tightened to close off two observed failure modes: (1) inventing action
-# words outside the valid set (e.g. "SELECT(...)"), and (2) appending
-# narrative/status text after the function call instead of stopping,
-# apparently mimicking the `history` string format it's shown rather than
-# emitting a bare action.
+# {current_url} added (2026-08-08): confirmed via saved screenshots
+# (outputs/browser/ss_0001.png) that the model repeatedly re-issued SEARCH
+# even when the screenshot genuinely showed a rendered results page — not a
+# screenshot-timing bug, a real zero-shot-planning weakness. Asking a 3B
+# base model to visually classify page-type from pixels alone was too hard
+# a sub-task; the URL already says this unambiguously as text
+# ("s?k=..." = search results), so hand it that instead of making the model
+# infer it. UNTESTED — this is the next experiment, not a confirmed fix.
 PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time on a shopping website. You are shown the CURRENT screenshot each turn. Decide the single next action needed to make progress toward the goal.
+
+Current URL: {current_url}
+(If this URL contains "s?k=" or "/s/", you are on a SEARCH RESULTS page —
+you must CLICK a specific product now, not SEARCH again. If it contains
+"/dp/" or similar, you're on a product detail page — look for an Add to
+Cart button. If it contains "cart", you're on the cart page already.)
 
 Valid function calls (pick exactly one — these are the ONLY four valid action words, nothing else is allowed):
 SEARCH("query")
@@ -76,20 +83,19 @@ SCROLL("down")
 DONE("summary")
 
 Reasoning steps, in order:
-1. Look at the screenshot and identify what KIND of page you are on:
-   - Search results page: a grid/list of many small product thumbnails and titles, no single large product image.
-   - Product detail page: one large product image, a title, price, and an "Add to Cart" / "Buy Now" button.
-   - Cart page: a list of items already added, URL contains "cart".
+1. Check the Current URL above first — it tells you what kind of page you're on more reliably than the screenshot alone.
 2. Never repeat the exact action you just completed if the screenshot still looks like the same page — if the last action doesn't seem to have changed anything useful, try a different, more specific action instead.
 3. If the screenshot shows the goal is already achieved (a cart/basket icon shows a count, the page confirms an item was added, or you're on the cart page with the item listed), respond DONE with a short summary. Do not keep repeating SEARCH or CLICK once the goal is achieved.
 4. To open a specific product from search results, use CLICK, never SELECT — SELECT is not a valid action here.
 
 Respond with EXACTLY one function call and nothing else — no extra words, no explanation of what it does, no status note after the closing parenthesis.
 
+5. Phrase the CLICK argument as the EXACT, VERBATIM text visible on the target element — copy it character-for-character from what's written on the button/link/title in the screenshot. Do NOT paraphrase, describe, summarize, or shorten it into your own words, and never use a full sentence. If the visible text is long, use only the first several words of it, not the whole thing. (Confirmed 2026-08-08: the grounding model was trained on verbatim on-page text as CLICK targets, not paraphrased descriptions — a paraphrase is out-of-distribution for it even when the intent is clear to a human.)
+
 Example sequence (one action per turn, across several turns — NOT all in one response):
   Turn 1, goal "buy Dune": SEARCH("Dune")
-  Turn 2, now on search results: CLICK("the Dune book cover")
-  Turn 3, now on product page: CLICK("the Add to Cart button")
+  Turn 2, now on search results (URL has "s?k="): CLICK("Dune")
+  Turn 3, now on product page (URL has "/dp/"): CLICK("Add to Cart")
   Turn 4, item now in cart: DONE("Added Dune to cart")
 
 Goal: {goal}
@@ -183,9 +189,10 @@ def parse_action(response: str):
     return None, None
 
 
-def plan_next_action(client: PlannerInferenceClient, png_bytes: bytes, goal: str, history: list):
+def plan_next_action(client: PlannerInferenceClient, png_bytes: bytes, goal: str,
+                      history: list, current_url: str):
     hist_str = "\n".join(f"- {h}" for h in history) if history else "(none - this is the first step)"
-    prompt = PLANNING_PROMPT_TEMPLATE.format(goal=goal, history=hist_str)
+    prompt = PLANNING_PROMPT_TEMPLATE.format(goal=goal, history=hist_str, current_url=current_url)
     result = client.plan(png_bytes, prompt)
     if result.get("error"):
         print(f"  ✗ planner server error: {result['error']}")
@@ -193,6 +200,51 @@ def plan_next_action(client: PlannerInferenceClient, png_bytes: bytes, goal: str
     response = result.get("raw_response", "")
     action, arg = parse_action(response)
     return response, action, arg
+
+
+def _closest_dom_text(arg: str, elems: list, min_score: float = 0.25) -> str | None:
+    """
+    Snap a possibly long/paraphrased/truncated planner CLICK argument to the
+    closest actual visible text on the CURRENT page (DOM element labels),
+    rather than trusting the planner's raw wording as-is.
+
+    Why DOM text and not OmniParser text: OmniParser's content_list only
+    exists inside DemoRunner.act() after it's already run OmniParser+Qwen —
+    using it here would mean either duplicating that detection pass or
+    restructuring click_visualizer.py's core act() method, which is
+    confirmed-working code this script deliberately doesn't touch. DOM
+    labels are already fetched every step via get_interactive_elements()
+    (used for the SEARCH input lookup), are exact (not OCR), and cost
+    nothing extra to reuse here.
+
+    Scored by word overlap (not edit-distance) since the planner's argument
+    and the true label commonly differ mainly in length (paraphrase, or a
+    truncated long title), not close spelling.
+
+    Returns None (leave the argument unchanged) if nothing clears min_score —
+    this is a safety net, not a hard override; a bad snap would be worse
+    than trusting the model's original wording.
+    """
+    if not arg or not elems:
+        return None
+    arg_words = set(arg.lower().split())
+    if not arg_words:
+        return None
+
+    best_label, best_score = None, 0.0
+    for e in elems:
+        label = (e.get("label") or "").strip()
+        if not label:
+            continue
+        label_words = set(label.lower().split())
+        if not label_words:
+            continue
+        overlap = len(arg_words & label_words)
+        score = overlap / min(len(arg_words), len(label_words))
+        if score > best_score:
+            best_label, best_score = label, score
+
+    return best_label if best_score >= min_score else None
 
 
 def ground_click(client: PlannerInferenceClient, browser: BrowserEnv, task_desc: str):
@@ -220,10 +272,12 @@ def run_agent(goal: str, start_url: str, server_url: str):
             print("=" * 60)
 
             ss = browser.screenshot(wait_stable=True)
+            current_url = browser.current_url()
+            print("  current url: " + current_url)
 
             print("  Planning next action...")
             t0 = time.time()
-            response, action, arg = plan_next_action(client, ss.png_bytes, goal, history)
+            response, action, arg = plan_next_action(client, ss.png_bytes, goal, history, current_url)
             print("  (%.1fs) planner said: %r" % (time.time() - t0, response))
 
             if action is None:
@@ -281,6 +335,12 @@ def run_agent(goal: str, start_url: str, server_url: str):
                 history.append('SEARCH("%s") - completed, results now showing' % arg)
 
             elif action == "CLICK":
+                elems_for_snap = browser.get_interactive_elements()
+                snapped = _closest_dom_text(arg, elems_for_snap)
+                if snapped and snapped != arg:
+                    print(f"  snapping CLICK target to closest on-page text: {snapped!r} (planner said {arg!r})")
+                    arg = snapped
+
                 print("  Grounding click target: %r" % arg)
                 t0 = time.time()
                 point = ground_click(client, browser, arg)
