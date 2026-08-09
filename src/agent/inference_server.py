@@ -71,7 +71,16 @@ class ActResponse(BaseModel):
 
 class PlanRequest(BaseModel):
     image_b64: str
-    goal:      str
+    # Two ways to drive this endpoint:
+    #   (a) prompt   — a fully pre-built prompt string (tests/planner_agent.py's
+    #       PlannerInferenceClient sends this — its own prompt/history logic
+    #       stays entirely local, so iterating on wording never requires
+    #       touching this file or restarting the Kaggle server).
+    #   (b) goal+history — server builds the prompt from PLANNING_PROMPT_TEMPLATE
+    #       below (router_client.py sends this).
+    # If both are omitted, or goal is omitted with no prompt, the request fails.
+    prompt:    Optional[str] = None
+    goal:      Optional[str] = None
     history:   List[str] = []
 
 class PlanResponse(BaseModel):
@@ -113,37 +122,25 @@ FALLBACK_ACTION_RE = re.compile(r'\b[A-Z]+\s*\(\s*"([^"]*)"', re.IGNORECASE)
 # version was weaker and lacked the fallback/example scaffolding, which is
 # why runs through this endpoint stalled (repeated SEARCH, never reached
 # Add to Cart) where tests/planner_agent.py's local runs didn't.
-PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time on a shopping website. You are shown the CURRENT screenshot each turn. Decide the single next action needed to make progress toward the goal.
+PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time. You respond with ONLY a function call, nothing else - no explanation, no extra words.
 
-Valid function calls (pick exactly one — these are the ONLY four valid action words, nothing else is allowed):
+Valid function calls (pick exactly one):
 SEARCH("query")
 CLICK("description of element")
 SCROLL("down")
 DONE("summary")
 
-Reasoning steps, in order:
-1. Look at the screenshot and identify what KIND of page you are on:
-   - Search results page: a grid/list of many small product thumbnails and titles, no single large product image.
-   - Product detail page: one large product image, a title, price, and an "Add to Cart" / "Buy Now" button.
-   - Cart page: a list of items already added, URL contains "cart".
-2. Never repeat the exact action you just completed if the screenshot still looks like the same page — if the last action doesn't seem to have changed anything useful, try a different, more specific action instead.
-3. If the screenshot shows the goal is already achieved (a cart/basket icon shows a count, the page confirms an item was added, or you're on the cart page with the item listed), respond DONE with a short summary. Do not keep repeating SEARCH or CLICK once the goal is achieved.
-4. To open a specific product from search results, use CLICK, never SELECT — SELECT is not a valid action here.
-
-Respond with EXACTLY one function call and nothing else — no extra words, no explanation of what it does, no status note after the closing parenthesis.
-
-Example sequence (one action per turn, across several turns — NOT all in one response):
-  Turn 1, goal "buy Dune": SEARCH("Dune")
-  Turn 2, now on search results: CLICK("the Dune book cover")
-  Turn 3, now on product page: CLICK("the Add to Cart button")
-  Turn 4, item now in cart: DONE("Added Dune to cart")
+Examples of correct responses:
+CLICK("the blue Add to cart button")
+SEARCH("wireless mouse")
+SCROLL("down")
 
 Goal: {goal}
 
 Already completed:
 {history}
 
-Look at the CURRENT screenshot. Respond with ONLY one function call for the next step:"""
+Look at the screenshot. Respond with ONLY one function call for the next step:"""
 
 QUESTION_RE = re.compile(r"^\s*(what|where|who|how many|is there|does|are there)\b", re.IGNORECASE)
 
@@ -296,9 +293,16 @@ def build_app(mode: str, lora_path: Optional[str]) -> FastAPI:
         except Exception as exc:
             return PlanResponse(action=None, arg=None, raw_response="", error=f"Bad base64: {exc}")
 
-        try:
+        if req.prompt:
+            prompt = req.prompt
+        elif req.goal:
             hist_str = "\n".join(f"- {h}" for h in req.history) if req.history else "(none - this is the first step)"
             prompt = PLANNING_PROMPT_TEMPLATE.format(goal=req.goal, history=hist_str)
+        else:
+            return PlanResponse(action=None, arg=None, raw_response="",
+                                 error="Must supply either 'prompt' or 'goal' in the /plan request.")
+
+        try:
             with runner._qwen.disable_adapter():
                 raw_response = runner._run_qwen(image, prompt)
             m = ACTION_RE.search(raw_response)
