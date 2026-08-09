@@ -94,6 +94,15 @@ class DescribeRequest(BaseModel):
     image_b64:      str
     question:       Optional[str] = None   # omit for a generic description
     max_new_tokens: int = 200
+    # Default False (matches original design): the LoRA adapter was trained
+    # ONLY on click-to-coordinate grounding (verbatim on-page text -> "Coordinate:
+    # (x,y). Mark: N."), never on captioning. Setting this True skips
+    # disable_adapter() and runs description WITH the adapter active anyway --
+    # expected to produce coordinate-shaped or otherwise degenerate output
+    # rather than a real description, since this is out-of-distribution for
+    # what it was fine-tuned on. Exists so that expectation can actually be
+    # tested and confirmed rather than just assumed.
+    use_adapter:    bool = False
 
 class DescribeResponse(BaseModel):
     response: str
@@ -341,8 +350,14 @@ def build_app(mode: str, lora_path: Optional[str]) -> FastAPI:
                 prompt = req.question.strip()
             else:
                 prompt = "Describe what you see in this image in detail."
-            with runner._qwen.disable_adapter():
+
+            if req.use_adapter:
+                # Deliberately NOT wrapped in disable_adapter() -- testing the
+                # out-of-distribution case on purpose, see DescribeRequest docstring.
                 response = _generate_prose(image, prompt, req.max_new_tokens)
+            else:
+                with runner._qwen.disable_adapter():
+                    response = _generate_prose(image, prompt, req.max_new_tokens)
             return DescribeResponse(response=response)
         except Exception as exc:
             log.exception("Describe error")
