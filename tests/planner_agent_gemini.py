@@ -27,6 +27,15 @@ resulting screenshot -- confirmed live: a run declared DONE while the
 cart icon still read 0 and the URL had never left search results. Prompt
 requires DONE to cite specific visual evidence in the CURRENT screenshot.
 
+Sign-in wall (2026-08-09): confirmed live -- "Buy Now" (as opposed to
+"Add to Cart") routes through Amazon's actual auth flow
+(amazon.in/ap/signin?...), which the agent obviously can't and shouldn't
+try to click through. Without an explicit rule for this, the run just
+idled out at MAX_STEPS with an ambiguous CLICK("Continue") attempt on the
+signin page. Added an explicit instruction to recognize the URL pattern
+and respond DONE with a clear reason instead, giving a clean stopping
+signal in the transcript rather than a silent MAX_STEPS timeout.
+
 Free tier limits (subject to change, check https://ai.google.dev for current
 numbers): roughly 15 requests/minute and up to 1,000 requests/day for
 gemini-2.5-flash.
@@ -96,8 +105,9 @@ Reasoning steps, in order:
 1. Identify the page type: search results (grid of small thumbnails), product detail (one large image + Add to Cart button), or cart page (URL contains "cart").
 2. "Add to Cart" only exists on a product detail page — if on search results, CLICK a specific product first.
 3. Never repeat the exact action you just took if the screenshot still looks like the same page.
-4. Respond DONE ONLY if you can point to explicit visual evidence in the CURRENT screenshot that the goal is achieved — the cart icon showing a non-zero count, a green "Added to Cart" confirmation banner, or being on the actual cart page with the item listed. Do NOT respond DONE just because you attempted a click that seemed like it should have worked — a click may have missed. Verify the result is actually visible before declaring DONE.
-5. Phrase the CLICK argument as the EXACT, VERBATIM text visible on the target element — copy it character-for-character from what's written on the button/link in the screenshot (e.g. "Add to Cart", "Sign in", "Buy Now"). Do NOT paraphrase, describe, summarize, or shorten it into your own words, and never use a full product title or sentence — only the literal text string printed on the element itself. If the element you want has no visible text at all (e.g. it's only an image or icon with no label), pick a different, text-labeled path toward the goal instead if one exists.
+4. If the current URL contains "signin", "ap/signin", or the screenshot shows a sign-in / login page, respond DONE("reached a sign-in page - cannot proceed without account credentials") immediately. Do not attempt to click "Continue", enter credentials, or otherwise navigate a login flow.
+5. Respond DONE ONLY if you can point to explicit visual evidence in the CURRENT screenshot that the goal is achieved — the cart icon showing a non-zero count, a green "Added to Cart" confirmation banner, or being on the actual cart page with the item listed. Do NOT respond DONE just because you attempted a click that seemed like it should have worked — a click may have missed. Verify the result is actually visible before declaring DONE. (The sign-in rule above is the one exception: DONE there regardless of whether the shopping goal itself was reached.)
+6. Phrase the CLICK argument as the EXACT, VERBATIM text visible on the target element — copy it character-for-character from what's written on the button/link in the screenshot (e.g. "Add to Cart", "Sign in", "Buy Now"). Do NOT paraphrase, describe, summarize, or shorten it into your own words, and never use a full product title or sentence — only the literal text string printed on the element itself. If the element you want has no visible text at all (e.g. it's only an image or icon with no label), pick a different, text-labeled path toward the goal instead if one exists.
 
 Goal: {goal}
 
