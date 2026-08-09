@@ -101,25 +101,49 @@ ACTION_RE = re.compile(
     re.IGNORECASE,
 )
 
-PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time. You respond with ONLY a function call, nothing else - no explanation, no extra words.
+# Fallback for when the planner invents an action word outside the valid set
+# (e.g. "SELECT(...)") but the shape is otherwise a recognizable function
+# call — recover it as a CLICK rather than aborting the run. Ported from
+# tests/planner_agent.py, confirmed live there: 'SELECT("The Odyssey")' from
+# this exact planner/prompt combo.
+FALLBACK_ACTION_RE = re.compile(r'\b[A-Z]+\s*\(\s*"([^"]*)"', re.IGNORECASE)
 
-Valid function calls (pick exactly one):
+# Ported from tests/planner_agent.py's proven version (page-type reasoning,
+# no-repeat rule, worked example sequence) — inference_server.py's own
+# version was weaker and lacked the fallback/example scaffolding, which is
+# why runs through this endpoint stalled (repeated SEARCH, never reached
+# Add to Cart) where tests/planner_agent.py's local runs didn't.
+PLANNING_PROMPT_TEMPLATE = """You control a web browser one step at a time on a shopping website. You are shown the CURRENT screenshot each turn. Decide the single next action needed to make progress toward the goal.
+
+Valid function calls (pick exactly one — these are the ONLY four valid action words, nothing else is allowed):
 SEARCH("query")
 CLICK("description of element")
 SCROLL("down")
 DONE("summary")
 
-Examples of correct responses:
-CLICK("the blue Add to cart button")
-SEARCH("wireless mouse")
-SCROLL("down")
+Reasoning steps, in order:
+1. Look at the screenshot and identify what KIND of page you are on:
+   - Search results page: a grid/list of many small product thumbnails and titles, no single large product image.
+   - Product detail page: one large product image, a title, price, and an "Add to Cart" / "Buy Now" button.
+   - Cart page: a list of items already added, URL contains "cart".
+2. Never repeat the exact action you just completed if the screenshot still looks like the same page — if the last action doesn't seem to have changed anything useful, try a different, more specific action instead.
+3. If the screenshot shows the goal is already achieved (a cart/basket icon shows a count, the page confirms an item was added, or you're on the cart page with the item listed), respond DONE with a short summary. Do not keep repeating SEARCH or CLICK once the goal is achieved.
+4. To open a specific product from search results, use CLICK, never SELECT — SELECT is not a valid action here.
+
+Respond with EXACTLY one function call and nothing else — no extra words, no explanation of what it does, no status note after the closing parenthesis.
+
+Example sequence (one action per turn, across several turns — NOT all in one response):
+  Turn 1, goal "buy Dune": SEARCH("Dune")
+  Turn 2, now on search results: CLICK("the Dune book cover")
+  Turn 3, now on product page: CLICK("the Add to Cart button")
+  Turn 4, item now in cart: DONE("Added Dune to cart")
 
 Goal: {goal}
 
 Already completed:
 {history}
 
-Look at the screenshot. Respond with ONLY one function call for the next step:"""
+Look at the CURRENT screenshot. Respond with ONLY one function call for the next step:"""
 
 QUESTION_RE = re.compile(r"^\s*(what|where|who|how many|is there|does|are there)\b", re.IGNORECASE)
 
@@ -278,8 +302,15 @@ def build_app(mode: str, lora_path: Optional[str]) -> FastAPI:
             with runner._qwen.disable_adapter():
                 raw_response = runner._run_qwen(image, prompt)
             m = ACTION_RE.search(raw_response)
-            action = m.group(1).upper() if m else None
-            arg = m.group(2).strip() if m else None
+            if m:
+                action, arg = m.group(1).upper(), m.group(2).strip()
+            else:
+                fm = FALLBACK_ACTION_RE.search(raw_response)
+                if fm:
+                    log.info("Unrecognized action word — recovering as CLICK: %r", raw_response)
+                    action, arg = "CLICK", fm.group(1).strip()
+                else:
+                    action, arg = None, None
             return PlanResponse(action=action, arg=arg, raw_response=raw_response)
         except Exception as exc:
             log.exception("Plan error")
