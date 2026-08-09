@@ -287,11 +287,26 @@ class BrowserEnv:
         # search results, producing an infinite CLICK-retry loop since
         # the agent correctly saw no change on the page it was watching.
         # Detect and switch to a newly-opened page here.
-        try:
-            self._page.wait_for_timeout(300)  # brief settle for the new page to register
-        except Exception:
-            pass
-        if len(self._context.pages) > pages_before:
+        #
+        # 2026-08-09: a SINGLE fixed 300ms wait + one-shot check was a race
+        # condition -- confirmed live against real Amazon over a real
+        # network, the new tab visibly opened but self._page never switched
+        # (current_url() kept reporting the old search-results page). 300ms
+        # was apparently not always enough for the new Page object to
+        # register in self._context.pages by the time the single check ran.
+        # Poll instead of one fixed sleep, so this reacts as soon as the new
+        # page actually appears rather than gambling on one timing window.
+        new_page_found = False
+        for _ in range(15):  # 15 x 100ms = up to 1.5s total, early-exits as soon as found
+            if len(self._context.pages) > pages_before:
+                new_page_found = True
+                break
+            try:
+                self._page.wait_for_timeout(100)
+            except Exception:
+                pass
+
+        if new_page_found:
             new_page = self._context.pages[-1]
             log.info("New tab detected after click -- switching tracked page to it")
             self._page = new_page
