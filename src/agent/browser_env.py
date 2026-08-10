@@ -20,12 +20,24 @@ from __future__ import annotations
 import argparse
 import io
 import logging
+import re
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from PIL import Image
+
+
+def _sanitize_for_filename(text: str, max_len: int = 50) -> str:
+    """Turn arbitrary prompt/goal text into a safe filename fragment --
+    lowercase, non-alphanumerics collapsed to single underscores, truncated
+    so filenames stay readable even for long goals."""
+    text = text.strip().lower()
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    text = text.strip("_")
+    return text[:max_len] if text else "screenshot"
 
 log = logging.getLogger(__name__)
 
@@ -132,6 +144,15 @@ class BrowserEnv:
         self._vp_h      = viewport_h
         self._save_ss   = save_screenshots
         self._ss_count  = 0
+        self._session_dir: Optional[Path] = None
+        if save_screenshots:
+            # Each BrowserEnv instance (i.e. each session/run) gets its own
+            # timestamped subfolder under SCREENSHOT_DIR instead of all runs
+            # dumping into the same flat directory -- makes it easy to find
+            # "the screenshots from today's demo run" without sifting through
+            # every session's files mixed together.
+            self._session_dir = SCREENSHOT_DIR / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            self._session_dir.mkdir(parents=True, exist_ok=True)
 
         # Detect DPR once after launch via JS
         self._dpr = float(self._page.evaluate("window.devicePixelRatio") or 1.0)
@@ -144,7 +165,7 @@ class BrowserEnv:
             )
 
         if save_screenshots:
-            SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+            log.info("Screenshots for this session will be saved to %s/", self._session_dir)
 
         log.info(
             "BrowserEnv ready: viewport=%dx%d  dpr=%.1f  headless=%s",
@@ -168,7 +189,7 @@ class BrowserEnv:
 
     # ── screenshot ────────────────────────────────────────────────────────
 
-    def screenshot(self, wait_stable: bool = True) -> ScreenshotResult:
+    def screenshot(self, wait_stable: bool = True, label: str | None = None) -> ScreenshotResult:
         """
         Capture the current viewport as a PIL image + PNG bytes.
 
@@ -177,6 +198,13 @@ class BrowserEnv:
                          before capturing.  Adds up to
                          STABILITY_RETRIES × STABILITY_POLL_MS ms of latency
                          but prevents capturing a mid-render frame.
+            label:       Optional text (e.g. the current goal/direction) used
+                         to prefix the saved filename, so screenshots read as
+                         "search_for_a_wireless_mouse_ss_0001.png" instead of
+                         a bare sequential "ss_0001.png" -- much easier to
+                         pick the right shots out for a presentation later.
+                         Only affects the filename when save_screenshots=True
+                         was passed to __init__; has no effect otherwise.
 
         Returns:
             ScreenshotResult with the image, raw bytes, and coordinate metadata.
@@ -213,7 +241,11 @@ class BrowserEnv:
         )
 
         if self._save_ss:
-            path = SCREENSHOT_DIR / f"ss_{self._ss_count:04d}.png"
+            if label:
+                safe_label = _sanitize_for_filename(label)
+                path = self._session_dir / f"{safe_label}_ss_{self._ss_count:04d}.png"
+            else:
+                path = self._session_dir / f"ss_{self._ss_count:04d}.png"
             img.save(path)
             log.debug("screenshot saved → %s", path)
             self._ss_count += 1
@@ -640,7 +672,7 @@ def _smoke_test(url: str, x_norm: float, y_norm: float, save: bool, headless: bo
         print(f"\n✓  Coordinate math correct.")
 
         if save:
-            print(f"  Screenshots saved to {SCREENSHOT_DIR}/")
+            print(f"  Screenshots saved to {env._session_dir}/")
 
         # Also verify the screenshot-to-click viewport contract explicitly
         ss2 = env.screenshot()

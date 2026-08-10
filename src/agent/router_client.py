@@ -9,17 +9,13 @@ endpoints (/act, /plan, /describe) - see the updated inference_server.py and
 the Kaggle notebook that runs it behind ngrok.
 
 Usage:
-    # image agent - single question against a local image, image agent
+    # image agent - just open the image and start asking questions
+    python -m src.agent.router_client --server-url https://xxxx.ngrok-free.dev \\
+        --image outputs/img_test/IMG_1.jpg
+
+    # image agent - opening question, then continues into the same session
     python -m src.agent.router_client --server-url https://xxxx.ngrok-free.dev \\
         --image outputs/img_test/IMG_1.jpg --input "describe what's on this screen"
-
-    # image agent - loop of questions (each one is a fresh, independent request -
-    # the server has no memory between calls, so this is NOT a stateful multi-turn
-    # chat like router_agent.py's --interactive; it just re-sends the same image
-    # with a new question each time. Good enough for "ask a few different things
-    # about one photo", not for follow-ups that depend on prior answers.)
-    python -m src.agent.router_client --server-url https://xxxx.ngrok-free.dev \\
-        --image outputs/img_test/IMG_1.jpg --loop
 
     # web agent - browser runs HERE, locally; only model calls go to the server
     python -m src.agent.router_client --server-url https://xxxx.ngrok-free.dev \\
@@ -29,9 +25,13 @@ from __future__ import annotations
 
 import argparse
 import base64
+import logging
+import os
 import re
 import sys
+import textwrap
 import time
+from pathlib import Path
 
 sys.path.insert(0, ".")
 
@@ -39,6 +39,18 @@ import requests
 from PIL import Image
 
 from src.agent.browser_env import BrowserEnv
+
+# Diagnostic detail (server health checks, routed mode, etc.) goes to a log
+# file only -- the console stays clean for a presentation. Nothing is lost,
+# just moved out of the way; check outputs/router_client.log if you need it.
+_LOG_DIR = Path("outputs")
+_LOG_DIR.mkdir(parents=True, exist_ok=True)
+log = logging.getLogger("router_client")
+log.setLevel(logging.INFO)
+_file_handler = logging.FileHandler(_LOG_DIR / "router_client.log")
+_file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+log.addHandler(_file_handler)
+log.propagate = False  # don't also send to root logger / console
 
 MAX_STEPS = 6
 
@@ -62,6 +74,24 @@ IMAGE_AGENT_KEYWORDS = re.compile(
 )
 
 QUESTION_RE = re.compile(r"^\s*(what|where|who|how many|is there|does|are there)\b", re.IGNORECASE)
+
+# Confirmed live: the base model (adapter disabled, /describe's mode) confidently
+# added "Tamil script" to a description of a sign that had no Tamil text at all --
+# a plausible-sounding but false detail, not a random-sampling fluke (do_sample=False
+# is already used server-side). This instruction is a mitigation, not a fix -- 3B
+# VLMs confabulate even when explicitly told not to -- but it's cheap and worth
+# always including rather than relying on the server's generic fallback prompt.
+ANTI_HALLUCINATION_SUFFIX = (
+    " Describe only what is clearly and directly visible. Be specific about visible "
+    "text, colors, and objects, but do NOT guess, infer, or add plausible-sounding "
+    "details you cannot directly confirm from the image itself -- for example, do not "
+    "claim additional languages, text, or objects are present unless you can actually "
+    "see them. If you're not sure about something, leave it out rather than guessing. "
+    "Do NOT name or identify any specific language or script (e.g. do not say 'Tamil', "
+    "'Chinese', 'Hindi', 'Arabic', etc.) unless the question specifically asks about the "
+    "language or script of text in the image -- if text is visible but you're not asked "
+    "about its language, just say the text is visible without naming a language."
+)
 
 
 def classify_intent(user_input: str, has_url: bool, has_image: bool, forced_mode: str | None) -> str:
@@ -94,7 +124,7 @@ class RemoteInferenceClient:
             r = requests.get(f"{self.base_url}/health", timeout=10)
             r.raise_for_status()
             data = r.json()
-            print(f"  [server] mode={data.get('mode')}  status={data.get('status')}")
+            log.info("Server health check OK -- mode=%s status=%s", data.get('mode'), data.get('status'))
         except Exception as exc:
             raise RuntimeError(f"Cannot reach inference server at {self.base_url}. Is it running?\n  Error: {exc}")
 
@@ -107,8 +137,9 @@ class RemoteInferenceClient:
     def _png_bytes_to_b64(png_bytes: bytes) -> str:
         return base64.b64encode(png_bytes).decode("utf-8")
 
-    def describe(self, image_path: str, question: str | None = None) -> dict:
-        payload = {"image_b64": self._image_to_b64(image_path), "question": question}
+    def describe(self, image_path: str, question: str | None = None, max_new_tokens: int = 200) -> dict:
+        payload = {"image_b64": self._image_to_b64(image_path), "question": question,
+                   "max_new_tokens": max_new_tokens}
         try:
             r = requests.post(f"{self.base_url}/describe", json=payload, timeout=120)
             r.raise_for_status()
@@ -148,17 +179,168 @@ class RemoteInferenceClient:
 # Image agent (remote)
 # ══════════════════════════════════════════════════════════════════════════
 
-def run_image_agent_remote(client: RemoteInferenceClient, image_path: str, user_input: str) -> str:
-    question = user_input.strip() if QUESTION_RE.match(user_input) else None
-    result = client.describe(image_path, question=question)
-    if result.get("error"):
-        return f"error: {result['error']}"
-    return result.get("response", "")
+# ══════════════════════════════════════════════════════════════════════════
+# Image agent (remote) — WITH real conversation history
+# ══════════════════════════════════════════════════════════════════════════
+# /describe is stateless server-side (no session state, one image+prompt in,
+# one answer out) -- so history is carried entirely client-side here: each
+# turn's prompt includes the full prior Q&A transcript, and the image is
+# just re-sent fresh every call (cheap; no server change needed for this).
+# This means the model genuinely has access to what was asked/answered
+# before, not just independent single-shot calls -- "what color is that?"
+# after "what's on the desk?" will actually work.
+#
+# Honest cost: the prompt grows every turn (full transcript re-sent each
+# time), so later questions in a long session will be slower to answer than
+# the first one -- same tradeoff documented in router_agent.py's local
+# run_image_chat, just here it's network+prompt-length instead of KV-cache.
+
+# Default answer is short and structurally capped (low max_new_tokens), not
+# just instructed to be brief -- confirmed live that instruction alone
+# ("be specific, don't guess") did NOT stop confabulation: it hallucinated
+# "Tamil script" once, then "Chinese characters" the next run, on a sign
+# with no non-English text at all. A short, tightly-capped answer gives the
+# model much less room to wander into confident fabrication. Full detail is
+# still available, just opt-in.
+SHORT_DESCRIBE_PROMPT = (
+    "In ONE short sentence, state the single most obvious and certain fact about "
+    "what this image shows -- e.g. what place, building, object, or scene it is, or "
+    "what text is clearly and directly readable in it. Only state something you are "
+    "certain of. Do not add extra descriptive detail, colors, or lists -- one "
+    "concise, confident sentence only."
+)
+DETAILED_DESCRIBE_PROMPT = "Describe what you see in this image in detail."
+
+SHORT_MAX_TOKENS = 60
+DETAILED_MAX_TOKENS = 500
+
+MORE_DETAIL_RE = re.compile(
+    r"\b(more detail|in detail|in depth|in more detail|elaborate|expand|tell me more|"
+    r"go deeper|describe more|more info|full description|detailed|fully|thoroughly)\b",
+    re.IGNORECASE,
+)
+
+# Only a truly generic "describe the image" (no specific topic) should get
+# the fully generic SHORT_DESCRIBE_PROMPT. Confirmed live: "Describe the
+# surrounding" was being silently discarded and answered with the SAME
+# canned generic answer as a plain "describe the image" -- the user's actual
+# topic was thrown away rather than being kept and just made concise.
+GENERIC_DESCRIBE_RE = re.compile(
+    r"^\s*(describe|caption)\s+(this|the)?\s*(image|page|screen|picture)?\s*\.?\s*$",
+    re.IGNORECASE,
+)
 
 
-def run_image_loop_remote(client: RemoteInferenceClient, image_path: str) -> None:
-    print("\nImage loaded - ask anything about it. Each question is independent "
-          "(no memory between turns). Type 'exit' to quit.\n")
+def _build_prompt_with_history(user_text: str, qa_history: list[tuple[str, str]]) -> tuple[str, int]:
+    """Returns (prompt, max_new_tokens). A genuine question (QUESTION_RE) is
+    answered directly and concisely (short budget, explicit brevity
+    instruction -- see fix note below); an explicit 'more detail' request
+    gets the long detailed prompt; a truly generic "describe the image" gets
+    the short generic baseline; anything else specific-but-short (e.g.
+    "describe the surrounding") keeps the user's own topic, just wrapped to
+    stay short and confident rather than being discarded."""
+    if QUESTION_RE.match(user_text):
+        # Confirmed live: sending the raw question with no brevity instruction
+        # (and a 200-token budget) produced a full re-description of the whole
+        # image plus the answer buried at the end, instead of a direct answer
+        # -- got worse once conversation history was added, since "using the
+        # conversation above" seems to nudge the model toward restating it.
+        base_prompt = (
+            f"{user_text} Answer directly and concisely -- a short, direct answer is "
+            f"enough. Do NOT repeat the full earlier description unless specifically asked to."
+        )
+        max_tokens = SHORT_MAX_TOKENS
+    elif MORE_DETAIL_RE.search(user_text):
+        base_prompt, max_tokens = DETAILED_DESCRIBE_PROMPT, DETAILED_MAX_TOKENS
+    elif GENERIC_DESCRIBE_RE.match(user_text):
+        base_prompt, max_tokens = SHORT_DESCRIBE_PROMPT, SHORT_MAX_TOKENS
+    else:
+        base_prompt = (
+            f"In ONE short, confident sentence, answer this about the image: {user_text}. "
+            f"Only state something you are certain of; don't add extra detail beyond "
+            f"what's asked."
+        )
+        max_tokens = SHORT_MAX_TOKENS
+
+    if qa_history:
+        transcript = "\n".join(f"Q: {q}\nA: {a}" for q, a in qa_history)
+        base_prompt = (
+            "Here is our conversation so far about this image:\n"
+            f"{transcript}\n\n"
+            f"Now answer this new question, using the conversation above AND the image "
+            f"itself: {base_prompt}"
+        )
+    return base_prompt + ANTI_HALLUCINATION_SUFFIX, max_tokens
+
+
+def _format_structured_description(text: str) -> str:
+    """The base model often answers detailed descriptions in markdown --
+    "1. **Header**:    - point one.    - point two.  2. **Next**: ..." -- which
+    reads as one giant run-on paragraph with literal ** characters in a plain
+    terminal. Reformat: strip bold markers, break each numbered header onto
+    its own line, break each "- " sub-bullet onto its own line. Heuristic,
+    not a real markdown parser -- good enough for how consistently this
+    model formats these responses, not guaranteed for every possible shape."""
+    text = text.replace("**", "")
+    text = re.sub(r'\s+(\d{1,2})\.\s+(?=[A-Z])', r'\n\n\1. ', text)
+    text = re.sub(r'\s{2,}-\s+', r'\n   - ', text)
+    return text.strip()
+
+
+def _print_assistant_reply(elapsed: float, answer: str, width: int = 88) -> None:
+    """Word-wrapped, markdown-structure-aware print instead of relying on raw
+    terminal wrap (breaks mid-word) or dumping numbered lists/bold markers as
+    one flat paragraph."""
+    prefix = f"({elapsed:.1f}s) Assistant: "
+    formatted = _format_structured_description(answer)
+    lines = formatted.split("\n")
+    out_lines = []
+    first = True
+    for line in lines:
+        if not line.strip():
+            out_lines.append("")
+            continue
+        if line.startswith("   - "):
+            indent = "   - "
+            content = line[len(indent):]
+        else:
+            indent = ""
+            content = line
+        if first:
+            wrapped = textwrap.fill(content, width=width, initial_indent=prefix, subsequent_indent=" " * len(prefix))
+            first = False
+        else:
+            cont_indent = indent if indent else "   "
+            wrapped = textwrap.fill(content, width=width, initial_indent=indent, subsequent_indent=cont_indent)
+        out_lines.append(wrapped)
+    print("\n" + "\n".join(out_lines) + "\n")
+
+
+def run_image_session(client: RemoteInferenceClient, image_path: str, first_input: str | None = None) -> None:
+    """Continuous multi-turn Q&A about ONE image, with real history (see module
+    note above). Default answers are short and to-the-point; say "more detail"
+    / "elaborate" / "describe more" to get the fuller version. If first_input
+    is given, it's asked immediately as the first turn; either way, drops into
+    an interactive loop afterward."""
+    qa_history: list[tuple[str, str]] = []
+
+    def ask(user_text: str) -> str:
+        prompt, max_tokens = _build_prompt_with_history(user_text, qa_history)
+        result = client.describe(image_path, question=prompt, max_new_tokens=max_tokens)
+        answer = f"[error: {result['error']}]" if result.get("error") else result.get("response", "")
+        qa_history.append((user_text, answer))
+        return answer
+
+    log.info("Session started. Short answers by default; 'more detail'/'describe more' "
+              "for the fuller version; 'exit' to quit.")
+    print("Image loaded\n")
+
+    if first_input:
+        print(f"You: {first_input}\n")
+        t0 = time.time()
+        answer = ask(first_input)
+        _print_assistant_reply(time.time() - t0, answer)
+
     while True:
         try:
             user_text = input("You: ").strip()
@@ -169,11 +351,9 @@ def run_image_loop_remote(client: RemoteInferenceClient, image_path: str) -> Non
             continue
         if user_text.lower() in ("exit", "quit", "q"):
             break
-        result = client.describe(image_path, question=user_text if QUESTION_RE.match(user_text) else None)
-        if result.get("error"):
-            print(f"Assistant: [error: {result['error']}]\n")
-        else:
-            print(f"Assistant: {result.get('response', '')}\n")
+        t0 = time.time()
+        answer = ask(user_text)
+        _print_assistant_reply(time.time() - t0, answer)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -292,25 +472,33 @@ def main():
     parser.add_argument("--loop", action="store_true", help="Image agent: repeated independent questions about --image")
     args = parser.parse_args()
 
+    os.system("cls" if os.name == "nt" else "clear")
     client = RemoteInferenceClient(args.server_url)
+
+    # --image alone, no --input, goes straight into an interactive session --
+    # no need for a separate --loop flag for this anymore. --loop is kept as
+    # an explicit synonym for backward compatibility.
+    if args.image and not args.input:
+        run_image_session(client, args.image)
+        return
 
     if args.loop:
         if not args.image:
             parser.error("--loop requires --image")
-        run_image_loop_remote(client, args.image)
+        run_image_session(client, args.image)
         return
 
     if not args.input:
-        parser.error("Provide --input '...' or use --loop with --image")
+        parser.error("Provide --input '...', or just --image to start an interactive image session")
 
     mode = classify_intent(args.input, has_url=bool(args.url), has_image=bool(args.image), forced_mode=args.mode)
-    print(f"[router] mode = {mode}", flush=True)
+    log.info("Routed to mode=%s for input=%r", mode, args.input)
 
     if mode == "image":
         if not args.image:
             print("error: image mode selected but no --image was provided")
             return
-        print(run_image_agent_remote(client, args.image, args.input))
+        run_image_session(client, args.image, first_input=args.input)
         return
 
     if not args.url:
